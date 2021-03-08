@@ -1,0 +1,11 @@
+old_files
+cache_backups
+output
+C2Athletes*.json
+C2Extended*.json
+C2Rankings*.json
+.vscode
+__pycache__
+.ipynb_checkpoints
+
+
