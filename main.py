@@ -54,7 +54,7 @@ if os.path.isfile(athletes_file):
 if os.path.isfile(extended_file):
     shutil.copyfile(extended_file, extended_file + "_backup")
 
-if config["use_cache"] == "True":
+if config["use_cache"] == True:
     try:
         fo = open("C2Athletes_cache.json")
         athlete_profiles_cache = json.load(fo)
@@ -194,7 +194,7 @@ for url in urls[0:num_ranking_urls+1]:
                                         athlete_profiles[profile_ID] = athlete_profile
                                         athlete_profiles_cache[profile_ID] = athlete_profile
                                 #TODO: add info from profile to workout..or do this later after scraping?
-                       
+                    
             if write_buffer_count % write_buffer == 0:
                 C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athlete_profiles, ex_workout_data])
                 if config["use_cache"] == "True":

@@ -1,7 +1,7 @@
 {
     "max_ranking_urls":"",
     "columns_per_page":50,
-    "use_cache":"True",
+    "use_cache":true,
     "url_query_parameters":{
         "rower":{
             "rower":["rower", "dynamic", "slides"],
