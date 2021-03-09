@@ -1,0 +1,40 @@
+{
+    "max_ranking_urls":"",
+    "columns_per_page":50,
+    "use_cache":true,
+    "threads":16,
+    "workouts_file":"output_multi/C2Rankings.json",
+    "athletes_file":"output_multi/C2Athletes.json",
+    "extended_file":"output_multi/C2Extended.json",
+    "athletes_cache_file":"output_multi/C2Athletes_cache.json",
+    "extended_cache_file":"output_multi/C2Extended_cache.json",
+    "url_profile_base":"https://log.concept2.com/profile/",
+    "write_buffer":1,
+    "get_extended_workout_data":true,
+    "get_profile_data":true,
+    "url_query_parameters":{
+        "rower":{
+            "rower":["rower", "dynamic", "slides"],
+            "weight":["L","H"],
+            "gender":["M","F"],
+            "adaptive":["", "PR3","PR3+[VI]", "PR3+[ID]", "PR3+[AK]", "PR3+[PD]", "PR3+[AKD]", "PR2", "PR1", "FES", "PR3+[SA]", "FES+[AR]", "PR3+[GD]"]
+        },
+        "skierg":{
+            "rower":[],
+            "weight":[],
+            "gender":["M","F"],
+            "adaptive":["", "STA1", "STA2", "STAL", "STAN", "STAI", "STAD", "SIT1", "SIT2", "SIT3", "VI"]
+        },
+        "bikeerg":{
+            "rower":[],
+            "weight":[],
+            "gender":["M","F"],
+            "adaptive":[""]
+        }
+    },
+    "url_parameters":{
+        "url_base" : "https://log.concept2.com/rankings",
+        "url_years" :[2021],
+        "url_events" : [1,4,30,60,100,500,1000,2000,5000,6000,10000,21097,42195,100000]
+    }
+}
