@@ -119,7 +119,8 @@ for url in urls[0:num_ranking_urls+1]:
                 for row in range(1,num_rows+1):
                     row_tree = table_tree[0].xpath('tbody/tr[' + str(row) + ']')
                     if row_tree != []:
-                        workout_data, ex_workout_data_profile, athlete_profile, profile_ID, workout_ID,urls_visited = C2scrape.get_workout_from_ranking_table_row(row_tree, url, column_headings, urls_visited, ranking_url_count, num_ranking_urls, page, pages, row, num_rows, get_extended_workout_data, get_profile_data, ex_workout_data_cache,athlete_profiles_cache, url_profile_base)                                
+                        #TODO: refactor this so print strings inside loop don't need as many variables
+                        workout_data, ex_workout_data_profile, athlete_profile, profile_ID, workout_ID, urls_visited = C2scrape.get_workout_from_ranking_table_row(row_tree, url, column_headings, urls_visited, ranking_url_count, num_ranking_urls, page, pages, row, num_rows, get_extended_workout_data, get_profile_data, ex_workout_data_cache,athlete_profiles_cache, url_profile_base)                                
                         #update global lists           
                         if athlete_profile != None:
                             athlete_profiles[profile_ID] = athlete_profile

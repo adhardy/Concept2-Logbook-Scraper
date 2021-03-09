@@ -167,7 +167,8 @@ def get_workout_from_ranking_table_row (row_tree, url, column_headings, urls_vis
     workout_data["profile_id"] = profile_ID
     for key, val in url.query_parameters.items():
         workout_data[key]=val
-                            
+
+    #TODO break these two sections out into two seperate functions, needs work on the string printing bit to help                
     if get_extended_workout_data == True:
         if workout_ID in ex_workout_data_cache.keys():
             print(get_str_row_progress(urls_visited, ranking_url_count, num_ranking_urls, page,pages, str(row), num_rows) + "Found extended workout data in cache: " + str(workout_ID))
