@@ -7,5 +7,6 @@ C2Rankings*.json
 .vscode
 __pycache__
 .ipynb_checkpoints
-
+output_multi
+*_backup
 
