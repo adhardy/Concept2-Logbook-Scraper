@@ -129,6 +129,12 @@ if os.path.isfile(athletes_file):
 if os.path.isfile(extended_file):
     shutil.copyfile(extended_file, extended_file + "_backup")
 
+if os.path.isfile(extended_file):
+    shutil.copyfile(athletes_cache_file, athletes_cache_file + "_backup")
+
+if os.path.isfile(extended_file):
+    shutil.copyfile(extended_cache_file, extended_cache_file + "_backup")
+
 if config["use_cache"] == True:
     try:
         fo = open(athletes_cache_file)
@@ -267,6 +273,6 @@ if profile_queue.empty():
 
 #final write
 C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
-if config["use_cache"] == "True":
+if config["use_cache"] == True:
     C2scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
 
