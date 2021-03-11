@@ -248,15 +248,14 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
                         if get_extended_workout_data == True:
                             profile_queue.put(Profile(workout_ID, "ext_workout", workout_info_link, ext_workouts, ext_workouts_cache))
 
-    #after each page, check to see if we should write to file
-    if datetime.now().timestamp() > timestamp_last_write + write_buffer:
-        #TODO sometimes get a race condition when writing files when the dictionary changes size will json.dumps exectes. at the moment we just skip and retry next time round but longterm needs a proper fix
-        lock.acquire()
-        C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
-        if config["use_cache"] == True:
-            C2scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
-        timestamp_last_write = datetime.now().timestamp()
-        lock.release()
+        #after each page, check to see if we should write to file
+        if datetime.now().timestamp() > timestamp_last_write + write_buffer:
+            lock.acquire()
+            C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
+            if config["use_cache"] == True:
+                C2scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
+            timestamp_last_write = datetime.now().timestamp()
+            lock.release()
 
 print("Finished scraping ranking tables, waiting for profile threads to finish...")
 
