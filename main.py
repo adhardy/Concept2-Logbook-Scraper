@@ -84,7 +84,7 @@ class MultiThread(threading.Thread):
 config = {}
 profile_queue = queue.Queue()
 try:
-    fo = open("C2config_multi.json")
+    fo = open("C2config.json")
     config = json.load(fo)
     fo.close
 except:
