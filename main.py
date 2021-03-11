@@ -52,11 +52,10 @@ def get_profile(profile):
 
 # Class
 class MultiThread(threading.Thread):
-    def __init__(self, name, profile_queue, config={}):
+    def __init__(self, name, profile_queue):
         threading.Thread.__init__(self)
         self.name = name
         self._stop_event = threading.Event()
-        self.config = config
 
     def run(self):
         print(f" ** Starting thread - {self.name}")
