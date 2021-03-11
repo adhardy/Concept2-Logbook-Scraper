@@ -42,7 +42,7 @@ def get_profile(profile):
                     #TODO need these data labels
                     ext_workout_value = tree.xpath('/html/body/div/div/div[1]/strong[contains(text(), "' + data_label +'")]/following-sibling::text()[1]')
                     ext_workout_value = data_label.strip(":").lower()
-                    profile.data[data_label] = ext_workout_value[0]#, "date_cached": datetime.datetime.now()} datetime doesn't JSON?
+                    profile.data[data_label] = ext_workout_value
                 profile.data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
 
     profile.profile_list.update({profile.profile_id:profile.data})
@@ -210,18 +210,35 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
                         workout_info_link = row_tree.xpath('td/a')[0].attrib["href"]
                         profile_ID = None
                         workout_ID = None
+
+                        #get profile and workout IDs from workout link
                         if workout_info_link.split("/")[-2] == "individual" or workout_info_link.split("/")[-2] == "race":
                             profile_ID = workout_info_link.split("/")[-1]
                             workout_ID = workout_info_link.split("/")[-3]
                         else:
                             workout_ID = workout_info_link.split("/")[-2]
 
+                        #get workout data from row
+                        workout_data = []
+                        row_data_tree = row_tree.xpath('td | td/a')
+                        del row_data_tree[1] #hacky, but to remove a row that shouldn't be their due to the /a tag used for the name
+                        row_list = [x.text for x in row_data_tree]                    
+                        workout_data = C2scrape.lists2dict(map(str.lower, column_headings),row_list)
+                        workout_data["year"] = ranking_table.year
+                        workout_data["machine"] = ranking_table.machine
+                        workout_data["event"] = ranking_table.event
+                        workout_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
+                        workout_data["profile_id"] = profile_ID
+                        for key, val in ranking_table.query_parameters.items():
+                            workout_data[key]=val
+                        workouts[workout_ID] = workout_data
+                        
                         if get_profile_data == True and profile_ID != None:
                             #add athlete profile object to thread queue
-                            profile_queue.put(Profile(profile_ID, "athlete", url_profile_base + profile_ID,athletes,athletes_cache))
+                            profile_queue.put(Profile(profile_ID, "athlete", url_profile_base + profile_ID, athletes, athletes_cache))
 
                         if get_extended_workout_data == True:
-                            profile_queue.put(Profile(workout_ID, "ext_workout", workout_info_link ,ext_workouts, ext_workouts_cache))
+                            profile_queue.put(Profile(workout_ID, "ext_workout", workout_info_link, ext_workouts, ext_workouts_cache))
 
             #after each page, check to see if we should write to file
             if datetime.now().timestamp() > timestamp_last_write + write_buffer:

@@ -1,9 +1,9 @@
 {
     "max_ranking_tables":"1",
     "columns_per_page":50,
-    "use_cache":false,
+    "use_cache":true,
     "threads":15,
-    "workouts_file":"output_multi/C2Rankings.json",
+    "workouts_file":"output_multi/C2Workouts.json",
     "athletes_file":"output_multi/C2Athletes.json",
     "extended_file":"output_multi/C2Extended.json",
     "athletes_cache_file":"output_multi/C2Athletes_cache.json",
