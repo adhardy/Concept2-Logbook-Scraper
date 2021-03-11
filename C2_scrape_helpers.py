@@ -127,9 +127,16 @@ def get_athlete_profile(request):
 
 def write_data(out_files, datas):
     for out_file, data in zip(out_files, datas):
-        fw = open(out_file, "w")
-        fw.write(json.dumps(data, indent=2))
-        fw.close
+        try:
+            fw = open(out_file, "w")
+            output_data = json.dumps(data, indent=2)
+            fw.write(output_data)
+            fw.close
+            print("Write complete: " + out_file)
+        except:
+            print("Write failed: " + out_file + ". Press any key to continue")
+            fl = open("log","a")
+            fl.write("Write failed: " + out_file)
     return
 
 def get_str_row_progress(urls_visited, ranking_url_count, num_ranking_urls, page,pages, row, rows):
