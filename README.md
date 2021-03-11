@@ -4,5 +4,5 @@ Scrapes the Concept2 Logbook site (log.concept2.com) and saves the information i
 
 Currently only captures information from the rankings (https://log.concept2.com/rankings).
 
-Config file:
+# Config
 TODO
