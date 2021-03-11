@@ -1,7 +1,18 @@
 {
-    "max_ranking_urls":"",
+    "max_ranking_tables":"",
     "columns_per_page":50,
-    "use_cache":"True",
+    "use_cache":true,
+    "threads":15,
+    "workouts_file":"output/C2Workouts.json",
+    "athletes_file":"output/C2Athletes.json",
+    "extended_file":"output/C2Extended.json",
+    "athletes_cache_file":"output/C2Athletes_cache.json",
+    "extended_cache_file":"output/C2Extended_cache.json",
+    "url_profile_base":"https://log.concept2.com/profile/",
+    "write_buffer":1,
+    "get_extended_workout_data":true,
+    "get_profile_data":true,
+    "verbose":1,
     "url_query_parameters":{
         "rower":{
             "rower":["rower", "dynamic", "slides"],

@@ -1,11 +1,11 @@
 old_files
 cache_backups
-output
+output*
 C2Athletes*.json
 C2Extended*.json
 C2Rankings*.json
 .vscode
 __pycache__
 .ipynb_checkpoints
-
-
+*_backup
+html_samples

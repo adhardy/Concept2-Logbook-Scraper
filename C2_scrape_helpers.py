@@ -1,6 +1,7 @@
 import requests
 from lxml import etree, html
 import json
+from time import strftime,gmtime
 
 #object to store url and associated workout variables
 class RankingPage():
@@ -104,10 +105,6 @@ def get_athlete_profile(request):
         athlete_profile["availablity"] = "training partner"
     else:
         athlete_profile["availablity"] = "private"
-    #check if I need to be a training partner
-
-
-
 
     #profile values not contained in tags so need to be a bit messy to get them
     for profile_label in athlete_profile_labels:
