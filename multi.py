@@ -45,8 +45,10 @@ def get_profile(profile):
                     profile.data[data_label] = ext_workout_value
                 profile.data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
 
-    profile.profile_list.update({profile.profile_id:profile.data})
-    profile.profile_cache.update({profile.profile_id:profile.data})
+        lock.acquire()
+        profile.profile_list.update({profile.profile_id:profile.data})
+        profile.profile_cache.update({profile.profile_id:profile.data})
+        lock.release()
 
 # Class
 class MultiThread(threading.Thread):
@@ -101,7 +103,7 @@ for i in range(THREADS):
 for i in range(THREADS): #TODO update all these loops with len(threads)
     threads[i].start()
     
-#lock = threading.Lock()
+lock = threading.Lock()
 
 write_buffer = config["write_buffer"] #write every X ranking pages
 write_buffer_count = 1
@@ -246,13 +248,15 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
                         if get_extended_workout_data == True:
                             profile_queue.put(Profile(workout_ID, "ext_workout", workout_info_link, ext_workouts, ext_workouts_cache))
 
-            #after each page, check to see if we should write to file
-            if datetime.now().timestamp() > timestamp_last_write + write_buffer:
-                #TODO sometimes get a race condition when writing files when the dictionary changes size will json.dumps exectes. at the moment we just skip and retry next time round but longterm needs a proper fix
-                C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
-                if config["use_cache"] == True:
-                    C2scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
-                timestamp_last_write = datetime.now().timestamp()
+    #after each page, check to see if we should write to file
+    if datetime.now().timestamp() > timestamp_last_write + write_buffer:
+        #TODO sometimes get a race condition when writing files when the dictionary changes size will json.dumps exectes. at the moment we just skip and retry next time round but longterm needs a proper fix
+        lock.acquire()
+        C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
+        if config["use_cache"] == True:
+            C2scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
+        timestamp_last_write = datetime.now().timestamp()
+        lock.release()
 
 print("Finished scraping ranking tables, waiting for profile threads to finish...")
 
@@ -260,11 +264,13 @@ print("Finished scraping ranking tables, waiting for profile threads to finish..
 while profile_queue.empty() == False:
     time.sleep(1)
     print("Queue size: " + str(profile_queue.qsize()))
+    lock.acquire()
     if datetime.now().timestamp() > timestamp_last_write + write_buffer:
         C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
         if config["use_cache"] == True:
             C2scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
         timestamp_last_write = datetime.now().timestamp()
+    lock.release()
 
 if profile_queue.empty():
     #join threads

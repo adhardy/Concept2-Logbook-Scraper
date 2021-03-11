@@ -1,5 +1,5 @@
 {
-    "max_ranking_tables":"1",
+    "max_ranking_tables":"",
     "columns_per_page":50,
     "use_cache":true,
     "threads":15,
@@ -9,7 +9,7 @@
     "athletes_cache_file":"output_multi/C2Athletes_cache.json",
     "extended_cache_file":"output_multi/C2Extended_cache.json",
     "url_profile_base":"https://log.concept2.com/profile/",
-    "write_buffer":10,
+    "write_buffer":1,
     "get_extended_workout_data":true,
     "get_profile_data":true,
     "verbose":1,
