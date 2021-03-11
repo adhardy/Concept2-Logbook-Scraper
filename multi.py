@@ -1,14 +1,14 @@
 import C2_scrape_helpers as C2scrape
 import string
 import json
-import datetime
+from datetime import datetime, date
 import os #this and shutil used for checking for and making copies of files
-import shutil
-from lxml import etree, html
-import queue
+import shutil #copying for backups
+from lxml import etree, html #reading html 
+import queue #multithreading
 import threading
 from time import strftime,gmtime
-import time
+import time #sleep
 
 # Class
 class MultiThread(threading.Thread):
@@ -30,9 +30,6 @@ class Profile:
         self.profile_cache = profile_cache
         self.data = None #json object with the profile data
 
-    def set_data(data):
-        self.data = data
-
 # Process the queue
 def process_queue():
     while True:
@@ -49,31 +46,33 @@ def process_queue():
 
 #get athlete or extended workout profile
 def get_profile(profile):
+    #check if in cache.
+    #Not too concerned about threads colliding here as worst case is that the thread makes an extra URL visit if the cache gets populated with this profile id in between this check and the url visit, profile will just be overwritten in dictionary with the same data
+    if profile.profile_id in profile.profile_cache.keys():
+        profile.data = profile.profile_cache[profile.profile_id]#retrieve from cache
+    else:
+        r = C2scrape.get_url(profile.url)
+        if r != None:
+            if profile.profile_type == "athlete":
+                profile.data = C2scrape.get_athlete_profile(r)
+                profile.data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
+            
+            #TODO breakout into function
+            if profile.profile_type == "ext_workout":
+                tree = html.fromstring(r.text)
+                label_tree = tree.xpath('/html/body/div/div/div[1]/strong')
+                data_labels = [label.text for label in label_tree]
+                profile.data = {}
+                for data_label in data_labels:
+                    #TODO need these data labels
+                    ext_workout_value = tree.xpath('/html/body/div/div/div[1]/strong[contains(text(), "' + data_label +'")]/following-sibling::text()[1]')
+                    ext_workout_value = data_label.strip(":").lower()
+                    profile.data[data_label] = ext_workout_value[0]#, "date_cached": datetime.datetime.now()} datetime doesn't JSON?
+                profile.data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
 
-    #dictionary is the dictionary from the main thread that gets the data update
-    r = C2scrape.get_url(profile.url)
-    if r != None:
-        if profile.profile_type == "athlete":
-            profile.data = C2scrape.get_athlete_profile(r)
-            profile.data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
-        
-        #TODO breakout into function
-        if profile.profile_type == "ext_workout":
-            tree = html.fromstring(r.text)
-            label_tree = tree.xpath('/html/body/div/div/div[1]/strong')
-            data_labels = [label.text for label in label_tree]
-            profile.data = {}
-            for data_label in data_labels:
-                #TODO need these data labels
-                ext_workout_value = tree.xpath('/html/body/div/div/div[1]/strong[contains(text(), "' + data_label +'")]/following-sibling::text()[1]')
-                ext_workout_value = data_label.strip(":").lower()
-                profile.data[data_label] = ext_workout_value[0]#, "date_cached": datetime.datetime.now()} datetime doesn't JSON?
-            profile.data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
-
-    profile.profile_list.update({profile.profile_id:profile.data})
-    profile.profile_cache.update({profile.profile_id:profile.data})
+        profile.profile_list.update({profile.profile_id:profile.data})
+        profile.profile_cache.update({profile.profile_id:profile.data})
     
-
 config = {}
 try:
     fo = open("C2config_multi.json")
@@ -101,8 +100,6 @@ workouts = {}
 ext_workouts = {}
 
 profile_queue = queue.Queue()
-
-urls_visited = 0
 
 if os.path.isfile(workouts_file):
     shutil.copyfile(workouts_file, workouts_file + "_backup")
@@ -150,6 +147,13 @@ for i in range(THREADS):
 for i in range(THREADS):
     threads[i].start()
 
+lock = threading.Lock()
+
+#initialize files
+C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
+if config["use_cache"] == "True":
+    C2scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
+timestamp_last_write = datetime.now().timestamp()
 
 for ranking_table in ranking_tables[0:num_ranking_tables+1]: 
 
@@ -167,13 +171,13 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
             #no pagination block, only one page
             pages = 1
     
-    #for page in range(1,pages+1):
-    for page in range(1):
+    for page in range(1,pages+1):
+    #for page in range(1):
         #master thread loop over each page
         url_string = ranking_table.url_string + "&page=" + str(page)
 
         
-        print(C2scrape.get_str_ranking_table_progress(urls_visited, num_ranking_tables,num_ranking_tables,page,pages) + "Getting ranking page: " + url_string)
+        print(C2scrape.get_str_ranking_table_progress(num_ranking_tables,num_ranking_tables,page,pages) + "Getting ranking page: " + url_string)
         if page > 1:
             #don't get the first page again (if page is ommitted, page 1 is loaded)
             workouts_page=[]
@@ -208,44 +212,47 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
                             workout_ID = workout_info_link.split("/")[-3]
                         else:
                             workout_ID = workout_info_link.split("/")[-2]
-                        #check if in cache
-                        if get_profile_data == True and profile_ID != None:
-                            #if so re-add from cache
-                            if profile_ID in athletes_cache.keys():
-                                #TODO: retrieve data from cache and save in extended workout array
-                                placeholder = "placeholder"
-                            else:
-                                #otherwise add profile object to thread queue
-                                profile_queue.put(Profile(profile_ID, "athlete", url_profile_base + profile_ID,athletes,athletes_cache))
-                        
-                        if get_extended_workout_data == True:
-                            if workout_ID in ext_workouts_cache.keys():
-                                #TODO: retrieve data from cache and save in extended workout array
-                                athletes.update(athletes_cache[profile_ID])
-                            else:
-                                profile_queue.put(Profile(workout_ID, "ext_workout", workout_info_link ,ext_workouts, ext_workouts_cache))
-           
-            #at the end of a page, check to see if we should write to file
-            if write_buffer_count % write_buffer == 0:
-                C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
-                if config["use_cache"] == "True":
-                    C2scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
-            write_buffer_count = write_buffer_count + 1
 
-# wait for queue to be empry, then join the threads
-# need to some regular writing here
+                        if get_profile_data == True and profile_ID != None:
+                            #add athlete profile object to thread queue
+                            profile_queue.put(Profile(profile_ID, "athlete", url_profile_base + profile_ID,athletes,athletes_cache))
+
+                        if get_extended_workout_data == True:
+                            profile_queue.put(Profile(workout_ID, "ext_workout", workout_info_link ,ext_workouts, ext_workouts_cache))
+
+            #after each page, check to see if we should write to file
+            if datetime.now().timestamp() > timestamp_last_write + write_buffer:
+                lock.acquire()
+                try:
+                    C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
+                    if config["use_cache"] == "True":
+                        C2scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
+                finally:
+                    lock.release()
+                    timestamp_last_write = datetime.now().timestamp() 
+
+
+# wait for queue to be empty, then join the threads
 while profile_queue.empty() == False:
     time.sleep(1)
     print("Queue size: " + str(profile_queue.qsize()))
+    if datetime.now().timestamp() > timestamp_last_write + write_buffer:
+        lock.acquire()
+        try:
+            C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
+            if config["use_cache"] == "True":
+                C2scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
+        finally:
+            lock.release()
+        timestamp_last_write = datetime.now().timestamp()
 
 #final write
 C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
-if bool(config["use_cache"]) == True:
-    C2scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
-print("Visited " + str(urls_visited) +  " urls!")
+if config["use_cache"] == "True":
+    C2scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
 
 if profile_queue.empty():
-    #TODO need to fiddle with this to get the threads to terminate propely
+    #TODO need to fiddle with this to get the threads to terminate propely, need to find a way to signal threads to stop when the queue is empty
     #join threads
     for i in range(THREADS):
         threads[i].join()

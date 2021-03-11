@@ -105,10 +105,6 @@ def get_athlete_profile(request):
         athlete_profile["availablity"] = "training partner"
     else:
         athlete_profile["availablity"] = "private"
-    #check if I need to be a training partner
-
-
-
 
     #profile values not contained in tags so need to be a bit messy to get them
     for profile_label in athlete_profile_labels:
@@ -133,74 +129,8 @@ def write_data(out_files, datas):
         fw.close
     return
 
-def get_str_row_progress(urls_visited, ranking_url_count, num_ranking_urls, page,pages, row, rows):
+def get_str_row_progress(ranking_url_count, num_ranking_urls, page,pages, row, rows):
     return get_str_ranking_table_progress(urls_visited, ranking_url_count, num_ranking_urls, page,pages) + "Row: " + str(row) + "/" + str(rows) + " | "
 
-def get_str_ranking_table_progress(urls_visited, ranking_url_count, num_ranking_urls, page,pages):
-    return "URLs visited: " +  str(urls_visited) + " | " + "Ranking Table: " + str(ranking_url_count) + "/" + str(num_ranking_urls) + " | " + "Page: " + str(page) + "/" + str(pages) + " | "
-
-def get_workout_from_ranking_table_row (row_tree, url, column_headings, urls_visited, ranking_url_count, num_ranking_urls, page, pages, row, num_rows, get_extended_workout_data, get_profile_data,ex_workout_data_cache, athlete_profiles_cache, url_profile_base):
-
-    rows = row_tree[0].xpath('td | td/a')
-    del rows[1] #hacky, but to remove a row that shouldn't be their due to the /a tag used for the name
-    row_list = [row.text for row in rows]
-    workout_info_link_tree = row_tree[0].xpath('td/a')[0].attrib["href"]
-    
-    profile_ID = None
-    workout_ID = None
-    athlete_profile = None
-    ex_workout_data_profile = None
-    workout_data = []
-    #extract profile_ID from URL
-    #check the format of the url, some don't have a profileID on the end of them
-    if workout_info_link_tree.split("/")[-2] == "individual" or workout_info_link_tree.split("/")[-2] == "race":
-        profile_ID = workout_info_link_tree.split("/")[-1]
-        workout_ID = workout_info_link_tree.split("/")[-3]
-    else:
-        workout_ID = workout_info_link_tree.split("/")[-2]
-
-    workout_data = lists2dict(map(str.lower, column_headings),row_list)
-    workout_data["year"] = url.year
-    workout_data["machine"] = url.machine
-    workout_data["event"] = url.event
-    workout_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
-    workout_data["profile_id"] = profile_ID
-    for key, val in url.query_parameters.items():
-        workout_data[key]=val
-
-    #TODO break these two sections out into two seperate functions, needs work on the string printing bit to help                
-    if get_extended_workout_data == True:
-        if workout_ID in ex_workout_data_cache.keys():
-            print(get_str_row_progress(urls_visited, ranking_url_count, num_ranking_urls, page,pages, str(row), num_rows) + "Found extended workout data in cache: " + str(workout_ID))
-            ex_workout_data_profile = ex_workout_data_cache[workout_ID]
-        else:
-            urls_visited = urls_visited + 1
-            print(get_str_row_progress(urls_visited, ranking_url_count, num_ranking_urls, page,pages, str(row), num_rows) +  "Getting extended workout data: " + workout_info_link_tree)
-            r_workout = get_url(workout_info_link_tree)
-
-            #TODO implment expiry on cache?
-            if r_workout != None:
-                ex_workout_tree = html.fromstring(r_workout.text)
-                ex_workout_data_labels = ex_workout_tree.xpath('/html/body/div/div/div[1]/strong')
-                ex_workout_data_labels = [label.text for label in ex_workout_data_labels]
-                ex_workout_data_profile = {}
-                for ex_workout_data_label in ex_workout_data_labels:
-                    ex_workout_value = ex_workout_tree.xpath('/html/body/div/div/div[1]/strong[contains(text(), "' + ex_workout_data_label +'")]/following-sibling::text()[1]')
-                    ex_workout_data_label = ex_workout_data_label.strip(":").lower()
-                    ex_workout_data_profile[ex_workout_data_label] = ex_workout_value[0]#, "date_cached": datetime.datetime.now()} datetime doesn't JSON?
-                ex_workout_data_profile["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
-
-    if get_profile_data == True and profile_ID != None: 
-            if profile_ID in athlete_profiles_cache.keys():
-                print(get_str_row_progress(urls_visited, ranking_url_count, num_ranking_urls, page,pages, str(row), num_rows) + "Found profile in cache: " + str(profile_ID))
-                athlete_profile = athlete_profiles_cache[profile_ID]
-            else:
-                #visit profile page and grab info
-                profile_url = url_profile_base + profile_ID
-                urls_visited = urls_visited + 1
-                print(get_str_row_progress(urls_visited, ranking_url_count, num_ranking_urls, page,pages, str(row), num_rows) + "Getting profile: " + profile_url)
-                r_profile = get_url(profile_url)
-                if r_profile != None:
-                    athlete_profile = get_athlete_profile(r_profile)
-                    athlete_profile["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
-    return workout_data, ex_workout_data_profile, athlete_profile, profile_ID, workout_ID, urls_visited
+def get_str_ranking_table_progress(ranking_url_count, num_ranking_urls, page,pages):
+    return "Ranking Table: " + str(ranking_url_count) + "/" + str(num_ranking_urls) + " | " + "Page: " + str(page) + "/" + str(pages) + " | "
