@@ -121,20 +121,18 @@ athletes = {}
 workouts = {}
 ext_workouts = {}
 
-if os.path.isfile(workouts_file):
-    shutil.copyfile(workouts_file, workouts_file + "_backup")
-
-if os.path.isfile(athletes_file):
-    shutil.copyfile(athletes_file, athletes_file + "_backup")
-
-if os.path.isfile(extended_file):
-    shutil.copyfile(extended_file, extended_file + "_backup")
-
-if os.path.isfile(extended_file):
-    shutil.copyfile(athletes_cache_file, athletes_cache_file + "_backup")
-
-if os.path.isfile(extended_file):
-    shutil.copyfile(extended_cache_file, extended_cache_file + "_backup")
+def backup_file(path):
+    if os.path.isfile(path):
+        try:
+            shutil.copyfile(path, path + "_backup")
+        except:
+            print("Could not back up: " + path)
+        
+backup_file(workouts_file)
+backup_file(athletes_file)
+backup_file(extended_file)
+backup_file(athletes_cache_file)
+backup_file(extended_cache_file)
 
 if config["use_cache"] == True:
     try:
