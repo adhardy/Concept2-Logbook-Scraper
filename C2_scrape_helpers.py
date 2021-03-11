@@ -123,15 +123,15 @@ def get_athlete_profile(request):
     return athlete_profile
 
 def write_data(out_files, datas):
-    try:
         for out_file, data in zip(out_files, datas):
-            fw = open(out_file, "w")
-            output_data = json.dumps(data, indent=2)
-            fw.write(output_data)
-            fw.close
-            print("Successfully wrote: " + out_file)
-    except:
-        print("Exception writing: " + out_file + ". Will retry at next write interval.")
+            try:
+                fw = open(out_file, "w")
+                output_data = json.dumps(data, indent=2)
+                fw.write(output_data)
+                fw.close
+                print("Successfully wrote: " + out_file)
+            except:
+                print("Exception writing: " + out_file + ". Will retry at next write interval.")
         return
 
 def get_str_ranking_table_progress(queue_size, ranking_url_count, num_ranking_urls, page,pages):
