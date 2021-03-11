@@ -244,8 +244,8 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
             if datetime.now().timestamp() > timestamp_last_write + write_buffer:
                 #TODO sometimes get a race condition when writing files when the dictionary changes size will json.dumps exectes. at the moment we just skip and retry next time round but longterm needs a proper fix
                 C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
-                if config["use_cache"] == "True":
-                    C2scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
+                if config["use_cache"] == True:
+                    C2scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
                 timestamp_last_write = datetime.now().timestamp()
 
 print("Finished scraping ranking tables, waiting for profile threads to finish...")
@@ -256,16 +256,17 @@ while profile_queue.empty() == False:
     print("Queue size: " + str(profile_queue.qsize()))
     if datetime.now().timestamp() > timestamp_last_write + write_buffer:
         C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
-        if config["use_cache"] == "True":
-            C2scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
+        if config["use_cache"] == True:
+            C2scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
         timestamp_last_write = datetime.now().timestamp()
+
+if profile_queue.empty():
+    #join threads
+    for i in range(THREADS):
+        threads[i].join()
 
 #final write
 C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
 if config["use_cache"] == "True":
     C2scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
 
-if profile_queue.empty():
-    #join threads
-    for i in range(THREADS):
-        threads[i].join()
