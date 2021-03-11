@@ -123,15 +123,16 @@ def get_athlete_profile(request):
     return athlete_profile
 
 def write_data(out_files, datas):
-    for out_file, data in zip(out_files, datas):
-        fw = open(out_file, "w")
-        output_data = json.dumps(data, indent=2)
-        fw.write(output_data)
-        fw.close
-    return
+    try:
+        for out_file, data in zip(out_files, datas):
+            fw = open(out_file, "w")
+            output_data = json.dumps(data, indent=2)
+            fw.write(output_data)
+            fw.close
+            print("Successfully wrote: " + out_file)
+    except:
+        print("Exception writing: " + out_file + ". Will retry at next write interval.")
+        return
 
-def get_str_row_progress(ranking_url_count, num_ranking_urls, page,pages, row, rows):
-    return get_str_ranking_table_progress(urls_visited, ranking_url_count, num_ranking_urls, page,pages) + "Row: " + str(row) + "/" + str(rows) + " | "
-
-def get_str_ranking_table_progress(ranking_url_count, num_ranking_urls, page,pages):
-    return "Ranking Table: " + str(ranking_url_count) + "/" + str(num_ranking_urls) + " | " + "Page: " + str(page) + "/" + str(pages) + " | "
+def get_str_ranking_table_progress(queue_size, ranking_url_count, num_ranking_urls, page,pages):
+    return "Queue size: " + str(queue_size) + "| Ranking Table: " + str(ranking_url_count) + "/" + str(num_ranking_urls) + " | Page: " + str(page) + "/" + str(pages) + " | "

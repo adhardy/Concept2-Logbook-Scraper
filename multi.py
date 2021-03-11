@@ -45,8 +45,8 @@ def get_profile(profile):
                     profile.data[data_label] = ext_workout_value[0]#, "date_cached": datetime.datetime.now()} datetime doesn't JSON?
                 profile.data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
 
-        profile.profile_list.update({profile.profile_id:profile.data})
-        profile.profile_cache.update({profile.profile_id:profile.data})
+    profile.profile_list.update({profile.profile_id:profile.data})
+    profile.profile_cache.update({profile.profile_id:profile.data})
 
 # Class
 class MultiThread(threading.Thread):
@@ -67,9 +67,8 @@ class MultiThread(threading.Thread):
                 pass
 
             else:
-                print("Thread " + self.name + ": Getting profile: " + profile.url)
+                #print("Thread " + self.name + ": Getting profile: " + profile.url)
                 get_profile(profile)
-                time.sleep(2)
 
         print(f" ** Completed thread - {self.name}")
 
@@ -115,6 +114,7 @@ extended_file = config["extended_file"]
 athletes_cache_file = config["athletes_cache_file"]
 extended_cache_file = config["extended_cache_file"]
 url_profile_base = config["url_profile_base"]
+verbose = config["verbose"]
 
 athletes = {}
 workouts = {}
@@ -178,17 +178,15 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
             pages = 1
     
     for page in range(1,pages+1):
-    #for page in range(1):
         #master process loop over each page
         url_string = ranking_table.url_string + "&page=" + str(page)
 
         
-        print(C2scrape.get_str_ranking_table_progress(num_ranking_tables,num_ranking_tables,page,pages) + "Getting ranking page: " + url_string)
+        print(C2scrape.get_str_ranking_table_progress(profile_queue.qsize(), num_ranking_tables,num_ranking_tables,page,pages) + "Getting ranking page: " + url_string)
         if page > 1:
             #don't get the first page again (if page is ommitted, page 1 is loaded)
             workouts_page=[]
             r = C2scrape.get_url(url_string)
-        print("Queue size: " + str(profile_queue.qsize()))
         #master process checks each row, adds URLs to queue for threads to visit
         if r != None:
             tree = html.fromstring(r.text)
@@ -227,11 +225,13 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
 
             #after each page, check to see if we should write to file
             if datetime.now().timestamp() > timestamp_last_write + write_buffer:
+                #TODO sometimes get a race condition when writing files when the dictionary changes size will json.dumps exectes. at the moment we just skip and retry next time round but longterm needs a proper fix
                 C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
                 if config["use_cache"] == "True":
                     C2scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
                 timestamp_last_write = datetime.now().timestamp()
 
+print("Finished scraping ranking tables, waiting for profile threads to finish...")
 
 # wait for queue to be empty, then join the threads
 while profile_queue.empty() == False:
@@ -249,7 +249,6 @@ if config["use_cache"] == "True":
     C2scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
 
 if profile_queue.empty():
-    #TODO need to fiddle with this to get the threads to terminate propely, need to find a way to signal threads to stop when the queue is empty
     #join threads
     for i in range(THREADS):
         threads[i].join()

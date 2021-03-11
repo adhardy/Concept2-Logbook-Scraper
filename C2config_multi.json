@@ -12,6 +12,7 @@
     "write_buffer":1,
     "get_extended_workout_data":true,
     "get_profile_data":true,
+    "verbose":1,
     "url_query_parameters":{
         "rower":{
             "rower":["rower", "dynamic", "slides"],

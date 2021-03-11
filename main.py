@@ -90,7 +90,6 @@ for url in urls[0:num_ranking_urls+1]:
             pages = 1
     
     for page in range(1,pages+1):
-        implement at first then giving each page to a thread (though more overhead) as there should not be any duplicate workouts or profiles on a page and don't have to worry about adding duplicate entries to the datastructures but still give a big speed boost
         url_string = url.url_string + "&page=" + str(page)
         urls_visited = urls_visited + 1
         
