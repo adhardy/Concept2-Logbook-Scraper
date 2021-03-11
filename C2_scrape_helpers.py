@@ -125,7 +125,8 @@ def get_athlete_profile(request):
 def write_data(out_files, datas):
     for out_file, data in zip(out_files, datas):
         fw = open(out_file, "w")
-        fw.write(json.dumps(data, indent=2))
+        output_data = json.dumps(data, indent=2)
+        fw.write(output_data)
         fw.close
     return
 

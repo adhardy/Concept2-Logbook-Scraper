@@ -10,17 +10,6 @@ import threading
 from time import strftime,gmtime
 import time #sleep
 
-# Class
-class MultiThread(threading.Thread):
-    def __init__(self, name):
-        threading.Thread.__init__(self)
-        self.name = name
-
-    def run(self):
-        print(f" ** Starting thread - {self.name}")
-        process_queue()
-        print(f" ** Completed thread - {self.name}")
-
 class Profile:
     def __init__(self, profile_id, profile_type, url, profile_list, profile_cache):
         self.profile_id = profile_id
@@ -29,20 +18,6 @@ class Profile:
         self.profile_list = profile_list
         self.profile_cache = profile_cache
         self.data = None #json object with the profile data
-
-# Process the queue
-def process_queue():
-    while True:
-        try:
-            profile = profile_queue.get(block=False)
-
-        except queue.Empty:
-            pass
-
-        else:
-            print("Getting profile: " + profile.url)
-            get_profile(profile)
-            time.sleep(2)
 
 #get athlete or extended workout profile
 def get_profile(profile):
@@ -72,8 +47,42 @@ def get_profile(profile):
 
         profile.profile_list.update({profile.profile_id:profile.data})
         profile.profile_cache.update({profile.profile_id:profile.data})
+
+# Class
+class MultiThread(threading.Thread):
+    def __init__(self, name, profile_queue, config={}):
+        threading.Thread.__init__(self)
+        self.name = name
+        self._stop_event = threading.Event()
+        self.config = config
+
+    def run(self):
+        print(f" ** Starting thread - {self.name}")
+
+        while not self._stop_event.isSet():
+            try:
+                profile = profile_queue.get(block=False)
+
+            except queue.Empty:
+                pass
+
+            else:
+                print("Thread " + self.name + ": Getting profile: " + profile.url)
+                get_profile(profile)
+                time.sleep(2)
+
+        print(f" ** Completed thread - {self.name}")
+
     
+    def join(self, timeout=None):
+        """set stop event and join within a given time period"""
+        self._stop_event.set()
+        super().join(timeout)
+
+
+
 config = {}
+profile_queue = queue.Queue()
 try:
     fo = open("C2config_multi.json")
     config = json.load(fo)
@@ -81,6 +90,19 @@ try:
 except:
     print("Could not open config file. Quitting")
     quit()
+
+# initializing threads
+THREADS = config["threads"]
+threads = []
+for i in range(THREADS):
+    threads.append(MultiThread(str(i), profile_queue))
+
+
+# start the threads
+for i in range(THREADS): #TODO update all these loops with len(threads)
+    threads[i].start()
+    
+#lock = threading.Lock()
 
 write_buffer = config["write_buffer"] #write every X ranking pages
 write_buffer_count = 1
@@ -92,14 +114,11 @@ athletes_file = config["athletes_file"]
 extended_file = config["extended_file"]
 athletes_cache_file = config["athletes_cache_file"]
 extended_cache_file = config["extended_cache_file"]
-THREADS = config["threads"]
 url_profile_base = config["url_profile_base"]
 
 athletes = {}
 workouts = {}
 ext_workouts = {}
-
-profile_queue = queue.Queue()
 
 if os.path.isfile(workouts_file):
     shutil.copyfile(workouts_file, workouts_file + "_backup")
@@ -136,19 +155,6 @@ num_ranking_tables = len(ranking_tables)
 if config["max_ranking_tables"] != "":
     num_ranking_tables = int(config["max_ranking_tables"])-1
 
-#num_ranking_tables = 0 
-
-# initializing threads
-threads = []
-for i in range(THREADS):
-    threads.append(MultiThread(str(i)))
-
-# start the threads
-for i in range(THREADS):
-    threads[i].start()
-
-lock = threading.Lock()
-
 #initialize files
 C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
 if config["use_cache"] == "True":
@@ -173,7 +179,7 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
     
     for page in range(1,pages+1):
     #for page in range(1):
-        #master thread loop over each page
+        #master process loop over each page
         url_string = ranking_table.url_string + "&page=" + str(page)
 
         
@@ -183,7 +189,7 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
             workouts_page=[]
             r = C2scrape.get_url(url_string)
         print("Queue size: " + str(profile_queue.qsize()))
-        #master thread checks each row, adds URLs to queue for threads to visit
+        #master process checks each row, adds URLs to queue for threads to visit
         if r != None:
             tree = html.fromstring(r.text)
             table_tree = tree.xpath('//html/body/div[2]/div/main/section[@class="content"]/table')
@@ -196,7 +202,6 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
                 for headings in column_headings:
                     row_dict = {}
 
-                #num_rows = int(config["columns_per_page"])
                 rows_tree = table_tree[0].xpath('tbody/tr')
                 num_rows = len(rows_tree)
 
@@ -222,14 +227,10 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
 
             #after each page, check to see if we should write to file
             if datetime.now().timestamp() > timestamp_last_write + write_buffer:
-                lock.acquire()
-                try:
-                    C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
-                    if config["use_cache"] == "True":
-                        C2scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
-                finally:
-                    lock.release()
-                    timestamp_last_write = datetime.now().timestamp() 
+                C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
+                if config["use_cache"] == "True":
+                    C2scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
+                timestamp_last_write = datetime.now().timestamp()
 
 
 # wait for queue to be empty, then join the threads
@@ -237,13 +238,9 @@ while profile_queue.empty() == False:
     time.sleep(1)
     print("Queue size: " + str(profile_queue.qsize()))
     if datetime.now().timestamp() > timestamp_last_write + write_buffer:
-        lock.acquire()
-        try:
-            C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
-            if config["use_cache"] == "True":
-                C2scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
-        finally:
-            lock.release()
+        C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
+        if config["use_cache"] == "True":
+            C2scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
         timestamp_last_write = datetime.now().timestamp()
 
 #final write
@@ -256,5 +253,3 @@ if profile_queue.empty():
     #join threads
     for i in range(THREADS):
         threads[i].join()
-
-
