@@ -130,7 +130,7 @@ def get_ext_workout_profile(r):
     for data_label in data_labels:
         value = tree.xpath(f'/html/body/div/div/div[1]/strong[contains(text(), "{data_label}")]/following-sibling::text()[1]')
         label = data_label.strip(":").lower()
-        profile[label] = value
+        profile[label] = value[0]
 
     return profile
     

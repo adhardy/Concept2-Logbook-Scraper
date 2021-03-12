@@ -93,7 +93,7 @@ def load_cache(cache_file):
         return cache
 
 config = {}
-profile_queue = queue.Queue()
+
 try:
     fo = open("C2config.json")
     config = json.load(fo)
@@ -105,9 +105,9 @@ except:
 # initializing threads
 THREADS = config["threads"]
 threads = []
+profile_queue = queue.Queue()
 for i in range(THREADS):
     threads.append(MultiThread(str(i), profile_queue))
-
 
 # start the threads
 for i in range(THREADS): #TODO update all these loops with len(threads)
