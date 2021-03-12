@@ -1,4 +1,4 @@
-import C2_scrape_helpers as C2scrape
+import C2Scrape
 import string
 import json
 from datetime import datetime, date
