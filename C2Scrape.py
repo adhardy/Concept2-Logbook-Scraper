@@ -59,7 +59,6 @@ def lists2dict(listkey,listval):
         returndict[key] = val
     return returndict
 
-
 def generate_C2Ranking_urls(url_query_parameters, url_years, url_events, url_base):
 #this supports 4 parameters for each machine type, they can be different, but exactly 4 must be present in the data structure below, the lists though can be blank
 #can be increased by adding more nested for loops when constructing the query string
@@ -121,6 +120,21 @@ def get_athlete_profile(r):
 
     return athlete_profile
 
+def get_workout_data(row_tree, column_headings, ranking_table, profile_ID):
+    workout_data = []
+    row_data_tree = row_tree.xpath('td | td/a')
+    del row_data_tree[1] #hacky, but to remove a row that shouldn't be their due to the /a tag used for the name
+    row_list = [x.text for x in row_data_tree]                    
+    workout_data = lists2dict(map(str.lower, column_headings),row_list)
+    workout_data["year"] = ranking_table.year
+    workout_data["machine"] = ranking_table.machine
+    workout_data["event"] = ranking_table.event
+    workout_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
+    workout_data["profile_id"] = profile_ID
+    for key, val in ranking_table.query_parameters.items():
+        workout_data[key]=val
+    return workout_data
+    
 def get_ext_workout_profile(r):
     #r: requests object
     tree = html.fromstring(r.text)

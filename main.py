@@ -93,7 +93,6 @@ def load_cache(cache_file):
         return cache
 
 config = {}
-
 try:
     fo = open("C2config.json")
     config = json.load(fo)
@@ -106,6 +105,7 @@ except:
 THREADS = config["threads"]
 threads = []
 profile_queue = queue.Queue()
+lock = threading.Lock()
 for i in range(THREADS):
     threads.append(MultiThread(str(i), profile_queue))
 
@@ -113,8 +113,6 @@ for i in range(THREADS):
 for i in range(THREADS): #TODO update all these loops with len(threads)
     threads[i].start()
     
-lock = threading.Lock()
-
 write_buffer = config["write_buffer"] #write every X ranking pages
 write_buffer_count = 1
 get_extended_workout_data = config["get_extended_workout_data"]
@@ -217,19 +215,7 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
                             workout_ID = workout_info_link.split("/")[-2]
 
                         #get workout data from row
-                        workout_data = []
-                        row_data_tree = row_tree.xpath('td | td/a')
-                        del row_data_tree[1] #hacky, but to remove a row that shouldn't be their due to the /a tag used for the name
-                        row_list = [x.text for x in row_data_tree]                    
-                        workout_data = C2Scrape.lists2dict(map(str.lower, column_headings),row_list)
-                        workout_data["year"] = ranking_table.year
-                        workout_data["machine"] = ranking_table.machine
-                        workout_data["event"] = ranking_table.event
-                        workout_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
-                        workout_data["profile_id"] = profile_ID
-                        for key, val in ranking_table.query_parameters.items():
-                            workout_data[key]=val
-                        workouts[workout_ID] = workout_data
+                        workouts[workout_ID] = C2Scrape.get_workout_data(row_tree, column_headings, ranking_table, profile_ID)
                         
                         if get_profile_data == True and profile_ID != None:
                             #add athlete profile object to thread queue
