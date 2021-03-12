@@ -10,15 +10,6 @@ import threading
 from time import strftime,gmtime
 import time #sleep
 
-class Profile:
-    def __init__(self, profile_id, profile_type, url, profile_list, profile_cache):
-        self.profile_id = profile_id
-        self.profile_type = profile_type
-        self.url = url
-        self.profile_list = profile_list
-        self.profile_cache = profile_cache
-        self.data = None #json object with the profile data
-
 #get athlete or extended workout profile
 def get_profile(profile):
     #check if in cache.
@@ -219,11 +210,11 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
                         
                         if get_profile_data == True and profile_ID != None:
                             #add athlete profile object to thread queue
-                            profile_queue.put(Profile(profile_ID, "athlete", url_profile_base + profile_ID, athletes, athletes_cache))
+                            profile_queue.put(C2Scrape.Profile(profile_ID, "athlete", url_profile_base + profile_ID, athletes, athletes_cache))
                             queue_added += 1
 
                         if get_extended_workout_data == True:
-                            profile_queue.put(Profile(workout_ID, "ext_workout", workout_info_link, ext_workouts, ext_workouts_cache))
+                            profile_queue.put(C2Scrape.Profile(workout_ID, "ext_workout", workout_info_link, ext_workouts, ext_workouts_cache))
                             queue_added += 1
 
         #after each page, check to see if we should write to file

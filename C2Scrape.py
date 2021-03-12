@@ -25,6 +25,14 @@ class RankingPage():
                 url_string = url_string + key + "=" + val + "&"
         return url_string.strip("&")
 
+class Profile:
+    def __init__(self, profile_id, profile_type, url, profile_list, profile_cache):
+        self.profile_id = profile_id
+        self.profile_type = profile_type
+        self.url = url
+        self.profile_list = profile_list
+        self.profile_cache = profile_cache
+        self.data = None #json object with the profile data
 
 def get_url(url, exception_on_error = False):
     try:
