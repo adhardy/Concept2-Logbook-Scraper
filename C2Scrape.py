@@ -2,7 +2,8 @@ import requests
 from lxml import etree, html
 import json
 from time import strftime,gmtime
-
+import os
+import shutil
 #object to store url and associated workout variables
 class RankingPage():
 
@@ -196,3 +197,25 @@ def write_data(out_files, datas):
 
 def get_str_ranking_table_progress(queue_size, queue_added, ranking_url_count, num_ranking_urls, page,pages):
     return f"Queue size: {str(queue_size)}/{str(queue_added)} | Ranking Table: {str(ranking_url_count)}/{str(num_ranking_urls)} | Page: {str(page)}/{str(pages)} |"
+
+def load_cache(cache_file):
+    #cache path on file system, and python dictionary where the cache will be loaded to
+    cache = []
+    try:
+        fo = open(cache_file)
+        cache = json.load(fo)
+        fo.close
+        print(f"Loaded cache file: {cache_file}")
+    except:
+        print(f"Couldn't load the cache file: {cache_file}")
+        cache = {}
+    finally:
+        return cache
+
+
+def backup_file(path):
+    if os.path.isfile(path):
+        try:
+            shutil.copyfile(path, path + "_backup")
+        except:
+            print("Could not back up: " + path)

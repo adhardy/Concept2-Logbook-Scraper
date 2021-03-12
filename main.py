@@ -2,15 +2,11 @@ import C2Scrape
 import string
 import json
 from datetime import datetime, date
-import os #this and shutil used for checking for and making copies of files
-import shutil #copying for backups
 from lxml import etree, html #reading html 
 import queue #multithreading
 import threading
 from time import strftime,gmtime
 import time #sleep
-
-
 
 # Class
 class MultiThread(threading.Thread):
@@ -40,27 +36,6 @@ class MultiThread(threading.Thread):
         """set stop event and join within a given time period"""
         self._stop_event.set()
         super().join(timeout)
-
-def backup_file(path):
-    if os.path.isfile(path):
-        try:
-            shutil.copyfile(path, path + "_backup")
-        except:
-            print("Could not back up: " + path)
-
-def load_cache(cache_file):
-    #cache path on file system, and python dictionary where the cache will be loaded to
-    cache = []
-    try:
-        fo = open(cache_file)
-        cache = json.load(fo)
-        fo.close
-        print(f"Loaded cache file: {cache_file}")
-    except:
-        print(f"Couldn't load the cache file: {cache_file}")
-        cache = {}
-    finally:
-        return cache
 
 config = {}
 try:
@@ -99,16 +74,13 @@ verbose = config["verbose"]
 athletes = {}
 workouts = {}
 ext_workouts = {}
-       
-backup_file(workouts_file)
-backup_file(athletes_file)
-backup_file(extended_file)
-backup_file(athletes_cache_file)
-backup_file(extended_cache_file)
+
+for file in [workouts_file, athletes_file, extended_file, athletes_cache_file, extended_cache_file]:
+    C2Scrape.backup_file(file)
 
 if config["use_cache"] == True:
-    athletes_cache = load_cache(athletes_cache_file)
-    ext_workouts_cache = load_cache(extended_cache_file)
+    athletes_cache = C2Scrape.load_cache(athletes_cache_file)
+    ext_workouts_cache = C2Scrape.load_cache(extended_cache_file)
 else:
     athletes_cache = {}
     ext_workouts_cache = {}
