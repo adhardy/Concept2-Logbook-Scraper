@@ -1,6 +1,7 @@
 import requests
 from lxml import etree, html
 import json
+from datetime import datetime, date
 from time import strftime,gmtime
 import os
 import shutil
@@ -255,3 +256,6 @@ def backup_file(path):
             shutil.copyfile(path, path + "_backup")
         except:
             print("Could not back up: " + path)
+
+def check_write_buffer(timestamp_last_write, write_buffer):
+    return datetime.now().timestamp() > timestamp_last_write + write_buffer

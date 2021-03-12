@@ -12,7 +12,6 @@
     "write_buffer":60,
     "get_extended_workout_data":true,
     "get_profile_data":true,
-    "verbose":1,
     "machine_parameters":{
         "rower":{
             "query":{

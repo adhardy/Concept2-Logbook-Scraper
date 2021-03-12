@@ -1,10 +1,10 @@
 import C2Scrape
 import string
 import json
-from datetime import datetime, date
 from lxml import etree, html #reading html 
 import queue #multithreading
 import threading
+from datetime import datetime, date
 from time import strftime,gmtime
 import time #sleep
 
@@ -28,19 +28,17 @@ for i in range(THREADS):
 # start the threads
 for i in range(THREADS): #TODO update all these loops with len(threads)
     threads[i].start()
-    
+
+#load config into easy to use vars
 write_buffer = config["write_buffer"] #write every X ranking pages
-write_buffer_count = 1
 get_extended_workout_data = config["get_extended_workout_data"]
 get_profile_data = config["get_profile_data"]
-
 workouts_file = config["workouts_file"]
 athletes_file = config["athletes_file"]
 extended_file = config["extended_file"]
 athletes_cache_file = config["athletes_cache_file"]
 extended_cache_file = config["extended_cache_file"]
 url_profile_base = config["url_profile_base"]
-verbose = config["verbose"]
 
 athletes = {}
 workouts = {}
@@ -57,7 +55,6 @@ else:
     ext_workouts_cache = {}
 
 ranking_tables = C2Scrape.generate_C2Ranking_urls(config["machine_parameters"], config["url_parameters"]["url_years"], config["url_parameters"]["url_base"])
-
 num_ranking_tables = len(ranking_tables)
 
 if config["max_ranking_tables"] != "":
@@ -91,7 +88,6 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
         #master process loop over each page
         url_string = ranking_table.url_string + "&page=" + str(page)
 
-        
         print(C2Scrape.get_str_ranking_table_progress(profile_queue.qsize(), queue_added, ranking_table_count,num_ranking_tables,page,pages) + "Getting ranking page: " + url_string)
         if page > 1:
             #don't get the first page again (if page is ommitted, page 1 is loaded)
@@ -141,7 +137,7 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
                             queue_added += 1
 
         #after each page, check to see if we should write to file
-        if datetime.now().timestamp() > timestamp_last_write + write_buffer:
+        if C2Scrape.check_write_buffer(timestamp_last_write, write_buffer):
             lock.acquire()
             C2Scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
             if config["use_cache"] == True:
@@ -156,7 +152,7 @@ while profile_queue.empty() == False:
     time.sleep(1)
     print("Queue size: " + str(profile_queue.qsize()))
     lock.acquire()
-    if datetime.now().timestamp() > timestamp_last_write + write_buffer:
+    if C2Scrape.check_write_buffer(timestamp_last_write, write_buffer):
         C2Scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
         if config["use_cache"] == True:
             C2Scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
