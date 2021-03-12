@@ -166,7 +166,8 @@ if config["use_cache"] == "True":
     C2scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
 timestamp_last_write = datetime.now().timestamp()
 
-ranking_table_count = 0
+ranking_table_count = 0 #counts the number of ranking table objects processed
+queue_added = 0 #counts the total number of objects added to the queue
 for ranking_table in ranking_tables[0:num_ranking_tables+1]: 
     ranking_table_count += 1
     r = C2scrape.get_url(ranking_table.url_string)
@@ -188,7 +189,7 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
         url_string = ranking_table.url_string + "&page=" + str(page)
 
         
-        print(C2scrape.get_str_ranking_table_progress(profile_queue.qsize(), ranking_table_count,num_ranking_tables,page,pages) + "Getting ranking page: " + url_string)
+        print(C2scrape.get_str_ranking_table_progress(profile_queue.qsize(), queue_added, ranking_table_count,num_ranking_tables,page,pages) + "Getting ranking page: " + url_string)
         if page > 1:
             #don't get the first page again (if page is ommitted, page 1 is loaded)
             workouts_page=[]
@@ -242,9 +243,11 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
                         if get_profile_data == True and profile_ID != None:
                             #add athlete profile object to thread queue
                             profile_queue.put(Profile(profile_ID, "athlete", url_profile_base + profile_ID, athletes, athletes_cache))
+                            queue_added += 1
 
                         if get_extended_workout_data == True:
                             profile_queue.put(Profile(workout_ID, "ext_workout", workout_info_link, ext_workouts, ext_workouts_cache))
+                            queue_added += 1
 
         #after each page, check to see if we should write to file
         if datetime.now().timestamp() > timestamp_last_write + write_buffer:

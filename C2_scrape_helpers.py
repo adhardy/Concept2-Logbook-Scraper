@@ -136,8 +136,5 @@ def write_data(out_files, datas):
             fl.write("Write failed: " + out_file)
     return
 
-def get_str_row_progress(urls_visited, ranking_url_count, num_ranking_urls, page,pages, row, rows):
-    return get_str_ranking_table_progress(urls_visited, ranking_url_count, num_ranking_urls, page,pages) + "Row: " + str(row) + "/" + str(rows) + " | "
-
-def get_str_ranking_table_progress(queue_size, ranking_url_count, num_ranking_urls, page,pages):
-    return "Queue size: " +  str(queue_size) + " | " + "Ranking Table: " + str(ranking_url_count) + "/" + str(num_ranking_urls) + " | " + "Page: " + str(page) + "/" + str(pages) + " | "
+def get_str_ranking_table_progress(queue_size, queue_added, ranking_url_count, num_ranking_urls, page,pages):
+    return f"Queue size: {str(queue_size)}/{str(queue_added)} | Ranking Table: {str(ranking_url_count)}/{str(num_ranking_urls)} | Page: {str(page)}/{str(pages)} |"
