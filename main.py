@@ -8,35 +8,6 @@ import threading
 from time import strftime,gmtime
 import time #sleep
 
-# Class
-class MultiThread(threading.Thread):
-    def __init__(self, name, profile_queue):
-        threading.Thread.__init__(self)
-        self.name = name
-        self._stop_event = threading.Event()
-
-    def run(self):
-        print(f" ** Starting thread - {self.name}")
-
-        while not self._stop_event.isSet():
-            try:
-                profile = profile_queue.get(block=False)
-
-            except queue.Empty:
-                pass
-
-            else:
-                #print("Thread " + self.name + ": Getting profile: " + profile.url)
-                C2Scrape.thread_get_profile(profile)
-
-        print(f" ** Completed thread - {self.name}")
-
-    
-    def join(self, timeout=None):
-        """set stop event and join within a given time period"""
-        self._stop_event.set()
-        super().join(timeout)
-
 config = {}
 try:
     fo = open("C2config.json")
@@ -52,7 +23,7 @@ threads = []
 profile_queue = queue.Queue()
 lock = threading.Lock()
 for i in range(THREADS):
-    threads.append(MultiThread(str(i), profile_queue))
+    threads.append(C2Scrape.MultiThread(str(i), profile_queue))
 
 # start the threads
 for i in range(THREADS): #TODO update all these loops with len(threads)

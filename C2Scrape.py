@@ -4,6 +4,8 @@ import json
 from time import strftime,gmtime
 import os
 import shutil
+import queue #multithreading
+import threading
 #object to store url and associated workout variables
 class RankingPage():
 
@@ -35,6 +37,35 @@ class Profile:
         self.profile_cache = profile_cache
         self.data = None #json object with the profile data
         self.lock = lock
+
+class MultiThread(threading.Thread):
+    def __init__(self, name, profile_queue):
+        threading.Thread.__init__(self)
+        self.name = name
+        self._stop_event = threading.Event()
+        self.profile_queue = profile_queue
+
+    def run(self):
+        print(f" ** Starting thread - {self.name}")
+
+        while not self._stop_event.isSet():
+            try:
+                profile = self.profile_queue.get(block=False)
+
+            except queue.Empty:
+                pass
+
+            else:
+                #print("Thread " + self.name + ": Getting profile: " + profile.url)
+                thread_get_profile(profile)
+
+        print(f" ** Completed thread - {self.name}")
+
+    
+    def join(self, timeout=None):
+        """set stop event and join within a given time period"""
+        self._stop_event.set()
+        super().join(timeout)
 
 def get_url(url, exception_on_error = False):
     try:
@@ -211,7 +242,6 @@ def load_cache(cache_file):
         cache = {}
     finally:
         return cache
-
 
 def backup_file(path):
     if os.path.isfile(path):
