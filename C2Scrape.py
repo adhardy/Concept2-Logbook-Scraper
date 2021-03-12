@@ -84,11 +84,11 @@ def get_url(url, exception_on_error = False):
             raise ValueError("Could not access url: " + url)
 
 
-def construct_url(url_parts, url_query_parameters={}):
+def construct_url(url_parts, machine_parameters={}):
     #construct url string
     url = "/".join(url_parts) + "?"
     #construct url with query string
-    for key,val in url_query_parameters.items():
+    for key,val in machine_parameters["query"].items():
         if (val != None and val != "") and (key != None and key != ""):
             url = url + key + "=" + val + "&"
     return url.strip("&")
@@ -100,7 +100,7 @@ def lists2dict(listkey,listval):
         returndict[key] = val
     return returndict
 
-def generate_C2Ranking_urls(url_query_parameters, url_years, url_events, url_base):
+def generate_C2Ranking_urls(machine_parameters, url_years, url_base):
 #this supports 4 parameters for each machine type, they can be different, but exactly 4 must be present in the data structure below, the lists though can be blank
 #can be increased by adding more nested for loops when constructing the query string
 #TODO: to make this fully dynamic I think I need to use a recursive algorithm
@@ -109,17 +109,19 @@ def generate_C2Ranking_urls(url_query_parameters, url_years, url_events, url_bas
     urls = []
     #this can be improved I think using recursion, try googling "recursive generator"
     for url_year in url_years:
-        for url_event in url_events:
-            for machine_type_key, machine_type_values in url_query_parameters.items():
+        for machine_type_key, machine_type_values in machine_parameters.items():
+            for url_event in machine_parameters[machine_type_key]["events"]:
                 param_keys=[]
-                for param_key,param_values in machine_type_values.items():
+                for param_key,param_values in machine_type_values["query"].items():
                     #get all the parameter keys for this machine type
                     param_keys.append(param_key)
-                for val0 in url_query_parameters[machine_type_key][param_keys[0]]:
-                    for val1 in url_query_parameters[machine_type_key][param_keys[1]]:
-                        for val2 in url_query_parameters[machine_type_key][param_keys[2]]:
-                            for val3 in url_query_parameters[machine_type_key][param_keys[3]]:
-                                urls.append(RankingPage(url_base, url_year, machine_type_key, url_event,lists2dict(param_keys,(val0,val1,val2,val3))))
+                #now iterate through them and construct the URL
+                for val0 in machine_parameters[machine_type_key]["query"][param_keys[0]]:
+                    for val1 in machine_parameters[machine_type_key]["query"][param_keys[1]]:
+                        for val2 in machine_parameters[machine_type_key]["query"][param_keys[2]]:
+                            for val3 in machine_parameters[machine_type_key]["query"][param_keys[3]]:
+                                query_parameters = lists2dict(param_keys,(val0,val1,val2,val3))
+                                urls.append(RankingPage(url_base, url_year, machine_type_key, url_event, query_parameters))
     return urls
 
 #get athlete or extended workout profile

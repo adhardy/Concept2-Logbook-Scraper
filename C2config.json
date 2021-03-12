@@ -13,29 +13,37 @@
     "get_extended_workout_data":true,
     "get_profile_data":true,
     "verbose":1,
-    "url_query_parameters":{
+    "machine_parameters":{
         "rower":{
-            "rower":["rower", "dynamic", "slides"],
-            "weight":["L","H"],
-            "gender":["M","F"],
-            "adaptive":["", "PR3","PR3+[VI]", "PR3+[ID]", "PR3+[AK]", "PR3+[PD]", "PR3+[AKD]", "PR2", "PR1", "FES", "PR3+[SA]", "FES+[AR]", "PR3+[GD]"]
+            "query":{
+                "rower":["rower", "dynamic", "slides"],
+                "weight":["L","H"],
+                "gender":["M","F"],
+                "adaptive":["", "PR3","PR3+[VI]", "PR3+[ID]", "PR3+[AK]", "PR3+[PD]", "PR3+[AKD]", "PR2", "PR1", "FES", "PR3+[SA]", "FES+[AR]", "PR3+[GD]"]
+            },
+            "events" : [1,4,30,60,100,500,1000,2000,5000,6000,10000,21097,42195,100000]
         },
         "skierg":{
-            "rower":[],
-            "weight":[],
-            "gender":["M","F"],
-            "adaptive":["", "STA1", "STA2", "STAL", "STAN", "STAI", "STAD", "SIT1", "SIT2", "SIT3", "VI"]
+            "query":{
+                "rower":[],
+                "weight":[],
+                "gender":["M","F"],
+                "adaptive":["", "STA1", "STA2", "STAL", "STAN", "STAI", "STAD", "SIT1", "SIT2", "SIT3", "VI"]
+            },
+            "events" : [1,4,30,60,100,500,1000,2000,5000,6000,10000,21097,42195,100000]
         },
         "bikeerg":{
-            "rower":[],
-            "weight":[],
-            "gender":["M","F"],
-            "adaptive":[""]
+            "query":{
+                "rower":[],
+                "weight":[],
+                "gender":["M","F"],
+                "adaptive":[""]
+            },
+            "events" : [1,4,30,60,100,500,1000,2000,5000,6000,10000,21097,42195,100000]
         }
     },
     "url_parameters":{
         "url_base" : "https://log.concept2.com/rankings",
-        "url_years" :[2021],
-        "url_events" : [1,4,30,60,100,500,1000,2000,5000,6000,10000,21097,42195,100000]
+        "url_years" :[2021]
     }
 }
