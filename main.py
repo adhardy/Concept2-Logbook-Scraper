@@ -57,6 +57,7 @@ else:
     ext_workouts_cache = {}
 
 ranking_tables = C2Scrape.generate_C2Ranking_urls(config["machine_parameters"], config["url_parameters"]["url_years"], config["url_parameters"]["url_base"])
+
 num_ranking_tables = len(ranking_tables)
 
 if config["max_ranking_tables"] != "":

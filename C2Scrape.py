@@ -115,6 +115,10 @@ def generate_C2Ranking_urls(machine_parameters, url_years, url_base):
                 for param_key,param_values in machine_type_values["query"].items():
                     #get all the parameter keys for this machine type
                     param_keys.append(param_key)
+                    if len(param_values) == 0:
+                        #safeguard against an empty entry, if nothing in list the below for loops will skip all the entries after
+                        machine_type_values["query"][param_key] = [""]
+
                 #now iterate through them and construct the URL
                 for val0 in machine_parameters[machine_type_key]["query"][param_keys[0]]:
                     for val1 in machine_parameters[machine_type_key]["query"][param_keys[1]]:
