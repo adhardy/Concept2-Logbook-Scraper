@@ -26,23 +26,15 @@ def get_profile(profile):
     if profile.profile_id in profile.profile_cache.keys():
         profile.data = profile.profile_cache[profile.profile_id]#retrieve from cache
     else:
-        r = C2scrape.get_url(profile.url)
+        r = C2Scrape.get_url(profile.url)
         if r != None:
             if profile.profile_type == "athlete":
-                profile.data = C2scrape.get_athlete_profile(r)
+                profile.data = C2Scrape.get_athlete_profile(r)
                 profile.data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
             
             #TODO breakout into function
             if profile.profile_type == "ext_workout":
-                tree = html.fromstring(r.text)
-                label_tree = tree.xpath('/html/body/div/div/div[1]/strong')
-                data_labels = [label.text for label in label_tree]
-                profile.data = {}
-                for data_label in data_labels:
-                    #TODO need these data labels
-                    ext_workout_value = tree.xpath('/html/body/div/div/div[1]/strong[contains(text(), "' + data_label +'")]/following-sibling::text()[1]')
-                    ext_workout_value = data_label.strip(":").lower()
-                    profile.data[data_label] = ext_workout_value
+                profile.data = C2Scrape.get_ext_workout_profile(r)
                 profile.data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
 
         lock.acquire()
@@ -93,9 +85,9 @@ def load_cache(cache_file):
         fo = open(cache_file)
         cache = json.load(fo)
         fo.close
-        print(f"Loaded cache file: {cache_file})
+        print(f"Loaded cache file: {cache_file}")
     except:
-        print(f"Couldn't load the cache file: {cache_file})
+        print(f"Couldn't load the cache file: {cache_file}")
         cache = {}
     finally:
         return cache
@@ -153,23 +145,23 @@ else:
     athletes_cache = {}
     ext_workouts_cache = {}
 
-ranking_tables = C2scrape.generate_C2Ranking_urls(config["url_query_parameters"], config["url_parameters"]["url_years"], config["url_parameters"]["url_events"], config["url_parameters"]["url_base"])
+ranking_tables = C2Scrape.generate_C2Ranking_urls(config["url_query_parameters"], config["url_parameters"]["url_years"], config["url_parameters"]["url_events"], config["url_parameters"]["url_base"])
 num_ranking_tables = len(ranking_tables)
 
 if config["max_ranking_tables"] != "":
     num_ranking_tables = int(config["max_ranking_tables"])-1
 
 #initialize files
-C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
+C2Scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
 if config["use_cache"] == "True":
-    C2scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
+    C2Scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
 timestamp_last_write = datetime.now().timestamp()
 
 ranking_table_count = 0 #counts the number of ranking table objects processed
 queue_added = 0 #counts the total number of objects added to the queue
 for ranking_table in ranking_tables[0:num_ranking_tables+1]: 
     ranking_table_count += 1
-    r = C2scrape.get_url(ranking_table.url_string)
+    r = C2Scrape.get_url(ranking_table.url_string)
 
     #find the number of pages for this ranking table
     if r != None:
@@ -188,11 +180,11 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
         url_string = ranking_table.url_string + "&page=" + str(page)
 
         
-        print(C2scrape.get_str_ranking_table_progress(profile_queue.qsize(), queue_added, ranking_table_count,num_ranking_tables,page,pages) + "Getting ranking page: " + url_string)
+        print(C2Scrape.get_str_ranking_table_progress(profile_queue.qsize(), queue_added, ranking_table_count,num_ranking_tables,page,pages) + "Getting ranking page: " + url_string)
         if page > 1:
             #don't get the first page again (if page is ommitted, page 1 is loaded)
             workouts_page=[]
-            r = C2scrape.get_url(url_string)
+            r = C2Scrape.get_url(url_string)
         #master process checks each row, adds URLs to queue for threads to visit
         if r != None:
             tree = html.fromstring(r.text)
@@ -229,7 +221,7 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
                         row_data_tree = row_tree.xpath('td | td/a')
                         del row_data_tree[1] #hacky, but to remove a row that shouldn't be their due to the /a tag used for the name
                         row_list = [x.text for x in row_data_tree]                    
-                        workout_data = C2scrape.lists2dict(map(str.lower, column_headings),row_list)
+                        workout_data = C2Scrape.lists2dict(map(str.lower, column_headings),row_list)
                         workout_data["year"] = ranking_table.year
                         workout_data["machine"] = ranking_table.machine
                         workout_data["event"] = ranking_table.event
@@ -251,9 +243,9 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
         #after each page, check to see if we should write to file
         if datetime.now().timestamp() > timestamp_last_write + write_buffer:
             lock.acquire()
-            C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
+            C2Scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
             if config["use_cache"] == True:
-                C2scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
+                C2Scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
             timestamp_last_write = datetime.now().timestamp()
             lock.release()
 
@@ -265,9 +257,9 @@ while profile_queue.empty() == False:
     print("Queue size: " + str(profile_queue.qsize()))
     lock.acquire()
     if datetime.now().timestamp() > timestamp_last_write + write_buffer:
-        C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
+        C2Scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
         if config["use_cache"] == True:
-            C2scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
+            C2Scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
         timestamp_last_write = datetime.now().timestamp()
     lock.release()
 
@@ -277,7 +269,7 @@ if profile_queue.empty():
         threads[i].join()
 
 #final write
-C2scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
+C2Scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
 if config["use_cache"] == True:
-    C2scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
+    C2Scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
 

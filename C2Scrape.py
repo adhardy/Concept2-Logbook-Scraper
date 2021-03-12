@@ -82,9 +82,9 @@ def generate_C2Ranking_urls(url_query_parameters, url_years, url_events, url_bas
                                 urls.append(RankingPage(url_base, url_year, machine_type_key, url_event,lists2dict(param_keys,(val0,val1,val2,val3))))
     return urls
 
-def get_athlete_profile(request):
-
-    tree = html.fromstring(request.text)
+def get_athlete_profile(r):
+    #r: requests object
+    tree = html.fromstring(r.text)
     a_tag_labels = ["Affiliation:", "Team:"]
 
     athlete_profile = {}
@@ -96,12 +96,12 @@ def get_athlete_profile(request):
 
     i = 0
     #check to see if I need to be logged in
-    if "You must be <a href=\"/login\">logged in</a> to see this user\'s profile" in request.text:
+    if "You must be <a href=\"/login\">logged in</a> to see this user\'s profile" in r.text:
         athlete_profile["availablity"] = "logged in"
-    elif "<div class=\"stats\">" in request.text:
+    elif "<div class=\"stats\">" in r.text:
         #stat boxes only appear when profile is accessible
         athlete_profile["availablity"] = "public"
-    elif "This user's profile is only accessible to training partners." in request.text:
+    elif "This user's profile is only accessible to training partners." in r.text:
         athlete_profile["availablity"] = "training partner"
     else:
         athlete_profile["availablity"] = "private"
@@ -119,9 +119,21 @@ def get_athlete_profile(request):
         #add to profile dictionary
         athlete_profile[profile_label] = profile_value[0].strip(" ")
 
-
     return athlete_profile
 
+def get_ext_workout_profile(r):
+    #r: requests object
+    tree = html.fromstring(r.text)
+    label_tree = tree.xpath('/html/body/div/div/div[1]/strong')
+    data_labels = [label.text for label in label_tree]
+    profile = {}
+    for data_label in data_labels:
+        value = tree.xpath(f'/html/body/div/div/div[1]/strong[contains(text(), "{data_label}")]/following-sibling::text()[1]')
+        label = data_label.strip(":").lower()
+        profile[label] = value
+
+    return profile
+    
 def write_data(out_files, datas):
     for out_file, data in zip(out_files, datas):
         try:
