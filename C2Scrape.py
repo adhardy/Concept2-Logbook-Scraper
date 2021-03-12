@@ -30,6 +30,7 @@ class RankingPage():
         return url_string.strip("&")
 
 class Profile:
+    #holds all the information needed for the worker threads to visit this profile and scrape data
     def __init__(self, profile_id, profile_type, url, profile_list, profile_cache, lock):
         self.profile_id = profile_id
         self.profile_type = profile_type
@@ -39,7 +40,8 @@ class Profile:
         self.data = None #json object with the profile data
         self.lock = lock
 
-class MultiThread(threading.Thread):
+class ProfileThread(threading.Thread):
+    #define how the threads function
     def __init__(self, name, profile_queue):
         threading.Thread.__init__(self)
         self.name = name
@@ -47,9 +49,11 @@ class MultiThread(threading.Thread):
         self.profile_queue = profile_queue
 
     def run(self):
+        #execute on thread.start()
         print(f" ** Starting thread - {self.name}")
 
         while not self._stop_event.isSet():
+            #thread will continuously check the queue for work until the master process joins the threads, and the stop_event signal is sent
             try:
                 profile = self.profile_queue.get(block=False)
 
@@ -64,9 +68,10 @@ class MultiThread(threading.Thread):
 
     
     def join(self, timeout=None):
-        """set stop event and join within a given time period"""
+        #send stop event to terminate the work loop before calling join
         self._stop_event.set()
         super().join(timeout)
+        print(f" ** Joined thread - {self.name}")
 
 def get_url(url, exception_on_error = False):
     try:
@@ -96,13 +101,14 @@ def construct_url(url_parts, machine_parameters={}):
     
 
 def lists2dict(listkey,listval):
+    #takes two lists, used the first as keys and the second as values, returns a dictionary
     returndict={}
     for key, val in zip(listkey, listval):
         returndict[key] = val
     return returndict
 
 def generate_C2Ranking_urls(machine_parameters, url_years, url_base):
-#this supports 4 parameters for each machine type, they can be different, but exactly 4 must be present in the data structure below, the lists though can be blank
+#this supports 4 query parameters for each machine type, the keys can be different, but exactly 4 must be present in the data structure below, the lists though can be blank
 #can be increased by adding more nested for loops when constructing the query string
 #TODO: to make this fully dynamic I think I need to use a recursive algorithm
 
@@ -147,7 +153,7 @@ def thread_get_profile(profile):
                 profile.data = get_ext_workout_profile(r)
                 profile.data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
 
-        profile.lock.acquire()
+        profile.lock.acquire() #dict.update is thread safe but json.dumps is not, need to hold here when printing output
         profile.profile_list.update({profile.profile_id:profile.data})
         profile.profile_cache.update({profile.profile_id:profile.data})
         profile.lock.release()
@@ -155,6 +161,7 @@ def thread_get_profile(profile):
 def get_athlete_profile(r):
     #r: requests object
     tree = html.fromstring(r.text)
+    #profile labels that are contained in <a> tags
     a_tag_labels = ["Affiliation:", "Team:"]
 
     athlete_profile = {}
@@ -179,7 +186,6 @@ def get_athlete_profile(r):
     #profile values not contained in tags so need to be a bit messy to get them
     for profile_label in athlete_profile_labels:
         #cycle through each profile label and search for the matching value
-        #if in a label that is known to be in an a_tag
         if profile_label in a_tag_labels:
             profile_value = content[0].xpath('p/strong[contains(text(), "' + profile_label +'")]/following-sibling::a/text()')
         else:
@@ -194,7 +200,7 @@ def get_athlete_profile(r):
 def get_workout_data(row_tree, column_headings, ranking_table, profile_ID):
     workout_data = []
     row_data_tree = row_tree.xpath('td | td/a')
-    del row_data_tree[1] #hacky, but to remove a row that shouldn't be their due to the /a tag used for the name
+    del row_data_tree[1] #hacky, but to remove a row that shouldn't be their due to the /a tag used for the name parameter
     row_list = [x.text for x in row_data_tree]                    
     workout_data = lists2dict(map(str.lower, column_headings),row_list)
     workout_data["year"] = ranking_table.year

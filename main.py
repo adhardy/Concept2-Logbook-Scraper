@@ -23,7 +23,7 @@ threads = []
 profile_queue = queue.Queue()
 lock = threading.Lock()
 for i in range(THREADS):
-    threads.append(C2Scrape.MultiThread(str(i), profile_queue))
+    threads.append(C2Scrape.ProfileThread(str(i), profile_queue))
 
 # start the threads
 for i in range(THREADS): #TODO update all these loops with len(threads)
