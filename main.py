@@ -135,8 +135,9 @@ def load_cache(cache_file):
         fo = open(cache_file)
         cache = json.load(fo)
         fo.close
+        print(f"Loaded cache file: {cache_file})
     except:
-        print("Couldn't load the cache file: " + cache_file)
+        print(f"Couldn't load the cache file: {cache_file})
         cache = {}
     finally:
         return cache
