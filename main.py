@@ -44,9 +44,11 @@ athletes = {}
 workouts = {}
 ext_workouts = {}
 
+#backup previous output
 for file in [workouts_file, athletes_file, extended_file, athletes_cache_file, extended_cache_file]:
     C2Scrape.backup_file(file)
 
+#load cache files
 if config["use_cache"] == True:
     athletes_cache = C2Scrape.load_cache(athletes_cache_file)
     ext_workouts_cache = C2Scrape.load_cache(extended_cache_file)
@@ -54,13 +56,15 @@ else:
     athletes_cache = {}
     ext_workouts_cache = {}
 
+#generate urls to visit
 ranking_tables = C2Scrape.generate_C2Ranking_urls(config["machine_parameters"], config["url_parameters"]["url_years"], config["url_parameters"]["url_base"])
 num_ranking_tables = len(ranking_tables)
 
+#check for override of maximum urls
 if config["max_ranking_tables"] != "":
     num_ranking_tables = int(config["max_ranking_tables"])-1
 
-#initialize files
+#initialize output files
 C2Scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
 if config["use_cache"] == "True":
     C2Scrape.write_data([athletes_cache_file, extended_cache_file],[athlete_profiles_cache, ext_workouts_cache])
@@ -68,6 +72,8 @@ timestamp_last_write = datetime.now().timestamp()
 
 ranking_table_count = 0 #counts the number of ranking table objects processed
 queue_added = 0 #counts the total number of objects added to the queue
+
+#main loop for master process over each ranking table
 for ranking_table in ranking_tables[0:num_ranking_tables+1]: 
     ranking_table_count += 1
     r = C2Scrape.get_url(ranking_table.url_string)
@@ -85,7 +91,7 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
             pages = 1
     
     for page in range(1,pages+1):
-        #master process loop over each page
+        #master process sub-loop over each page
         url_string = ranking_table.url_string + "&page=" + str(page)
 
         print(C2Scrape.get_str_ranking_table_progress(profile_queue.qsize(), queue_added, ranking_table_count,num_ranking_tables,page,pages) + "Getting ranking page: " + url_string)
@@ -127,12 +133,12 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
                         #get workout data from row
                         workouts[workout_ID] = C2Scrape.get_workout_data(row_tree, column_headings, ranking_table, profile_ID)
                         
-                        if get_profile_data == True and profile_ID != None:
+                        if get_profile_data and profile_ID != None:
                             #add athlete profile object to thread queue
                             profile_queue.put(C2Scrape.Profile(profile_ID, "athlete", url_profile_base + profile_ID, athletes, athletes_cache, lock))
                             queue_added += 1
 
-                        if get_extended_workout_data == True:
+                        if get_extended_workout_data:
                             profile_queue.put(C2Scrape.Profile(workout_ID, "ext_workout", workout_info_link, ext_workouts, ext_workouts_cache, lock))
                             queue_added += 1
 
@@ -140,7 +146,7 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
         if C2Scrape.check_write_buffer(timestamp_last_write, write_buffer):
             lock.acquire()
             C2Scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
-            if config["use_cache"] == True:
+            if config["use_cache"]:
                 C2Scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
             timestamp_last_write = datetime.now().timestamp()
             lock.release()
@@ -148,7 +154,7 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
 print("Finished scraping ranking tables, waiting for profile threads to finish...")
 
 # wait for queue to be empty, then join the threads
-while profile_queue.empty() == False:
+while not profile_queue.empty():
     time.sleep(1)
     print("Queue size: " + str(profile_queue.qsize()))
     lock.acquire()
