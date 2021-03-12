@@ -26,13 +26,14 @@ class RankingPage():
         return url_string.strip("&")
 
 class Profile:
-    def __init__(self, profile_id, profile_type, url, profile_list, profile_cache):
+    def __init__(self, profile_id, profile_type, url, profile_list, profile_cache, lock):
         self.profile_id = profile_id
         self.profile_type = profile_type
         self.url = url
         self.profile_list = profile_list
         self.profile_cache = profile_cache
         self.data = None #json object with the profile data
+        self.lock = lock
 
 def get_url(url, exception_on_error = False):
     try:
@@ -88,6 +89,29 @@ def generate_C2Ranking_urls(url_query_parameters, url_years, url_events, url_bas
                             for val3 in url_query_parameters[machine_type_key][param_keys[3]]:
                                 urls.append(RankingPage(url_base, url_year, machine_type_key, url_event,lists2dict(param_keys,(val0,val1,val2,val3))))
     return urls
+
+#get athlete or extended workout profile
+def thread_get_profile(profile):
+    #check if in cache.
+    #Not too concerned about threads colliding here as worst case is that the thread makes an extra URL visit if the cache gets populated with this profile id in between this check and the url visit, profile will just be overwritten in dictionary with the same data
+    if profile.profile_id in profile.profile_cache.keys():
+        profile.data = profile.profile_cache[profile.profile_id]#retrieve from cache
+    else:
+        r = get_url(profile.url)
+        if r != None:
+            if profile.profile_type == "athlete":
+                profile.data = get_athlete_profile(r)
+                profile.data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
+            
+            #TODO breakout into function
+            if profile.profile_type == "ext_workout":
+                profile.data = get_ext_workout_profile(r)
+                profile.data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
+
+        profile.lock.acquire()
+        profile.profile_list.update({profile.profile_id:profile.data})
+        profile.profile_cache.update({profile.profile_id:profile.data})
+        profile.lock.release()
 
 def get_athlete_profile(r):
     #r: requests object

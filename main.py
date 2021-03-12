@@ -10,28 +10,7 @@ import threading
 from time import strftime,gmtime
 import time #sleep
 
-#get athlete or extended workout profile
-def get_profile(profile):
-    #check if in cache.
-    #Not too concerned about threads colliding here as worst case is that the thread makes an extra URL visit if the cache gets populated with this profile id in between this check and the url visit, profile will just be overwritten in dictionary with the same data
-    if profile.profile_id in profile.profile_cache.keys():
-        profile.data = profile.profile_cache[profile.profile_id]#retrieve from cache
-    else:
-        r = C2Scrape.get_url(profile.url)
-        if r != None:
-            if profile.profile_type == "athlete":
-                profile.data = C2Scrape.get_athlete_profile(r)
-                profile.data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
-            
-            #TODO breakout into function
-            if profile.profile_type == "ext_workout":
-                profile.data = C2Scrape.get_ext_workout_profile(r)
-                profile.data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
 
-        lock.acquire()
-        profile.profile_list.update({profile.profile_id:profile.data})
-        profile.profile_cache.update({profile.profile_id:profile.data})
-        lock.release()
 
 # Class
 class MultiThread(threading.Thread):
@@ -52,7 +31,7 @@ class MultiThread(threading.Thread):
 
             else:
                 #print("Thread " + self.name + ": Getting profile: " + profile.url)
-                get_profile(profile)
+                C2Scrape.thread_get_profile(profile)
 
         print(f" ** Completed thread - {self.name}")
 
@@ -210,11 +189,11 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
                         
                         if get_profile_data == True and profile_ID != None:
                             #add athlete profile object to thread queue
-                            profile_queue.put(C2Scrape.Profile(profile_ID, "athlete", url_profile_base + profile_ID, athletes, athletes_cache))
+                            profile_queue.put(C2Scrape.Profile(profile_ID, "athlete", url_profile_base + profile_ID, athletes, athletes_cache, lock))
                             queue_added += 1
 
                         if get_extended_workout_data == True:
-                            profile_queue.put(C2Scrape.Profile(workout_ID, "ext_workout", workout_info_link, ext_workouts, ext_workouts_cache))
+                            profile_queue.put(C2Scrape.Profile(workout_ID, "ext_workout", workout_info_link, ext_workouts, ext_workouts_cache, lock))
                             queue_added += 1
 
         #after each page, check to see if we should write to file
