@@ -79,7 +79,26 @@ class MultiThread(threading.Thread):
         self._stop_event.set()
         super().join(timeout)
 
+def backup_file(path):
+    if os.path.isfile(path):
+        try:
+            shutil.copyfile(path, path + "_backup")
+        except:
+            print("Could not back up: " + path)
 
+def load_cache(cache_file):
+    #cache path on file system, and python dictionary where the cache will be loaded to
+    cache = []
+    try:
+        fo = open(cache_file)
+        cache = json.load(fo)
+        fo.close
+        print(f"Loaded cache file: {cache_file})
+    except:
+        print(f"Couldn't load the cache file: {cache_file})
+        cache = {}
+    finally:
+        return cache
 
 config = {}
 profile_queue = queue.Queue()
@@ -120,27 +139,6 @@ verbose = config["verbose"]
 athletes = {}
 workouts = {}
 ext_workouts = {}
-
-def backup_file(path):
-    if os.path.isfile(path):
-        try:
-            shutil.copyfile(path, path + "_backup")
-        except:
-            print("Could not back up: " + path)
-
-def load_cache(cache_file):
-    #cache path on file system, and python dictionary where the cache will be loaded to
-    cache = []
-    try:
-        fo = open(cache_file)
-        cache = json.load(fo)
-        fo.close
-        print(f"Loaded cache file: {cache_file})
-    except:
-        print(f"Couldn't load the cache file: {cache_file})
-        cache = {}
-    finally:
-        return cache
        
 backup_file(workouts_file)
 backup_file(athletes_file)
