@@ -127,7 +127,20 @@ def backup_file(path):
             shutil.copyfile(path, path + "_backup")
         except:
             print("Could not back up: " + path)
-        
+
+def load_cache(cache_file):
+    #cache path on file system, and python dictionary where the cache will be loaded to
+    cache = []
+    try:
+        fo = open(cache_file)
+        cache = json.load(fo)
+        fo.close
+    except:
+        print("Couldn't load the cache file: " + cache_file)
+        cache = {}
+    finally:
+        return cache
+       
 backup_file(workouts_file)
 backup_file(athletes_file)
 backup_file(extended_file)
@@ -135,24 +148,11 @@ backup_file(athletes_cache_file)
 backup_file(extended_cache_file)
 
 if config["use_cache"] == True:
-    try:
-        fo = open(athletes_cache_file)
-        athletes_cache = json.load(fo)
-        fo.close
-    except:
-        print("Couldn't load athletes cache.")
-        athletes_cache = {}
-
-    try:
-        fo = open(extended_cache_file)
-        ext_workouts_cache = json.load(fo)
-        fo.close
-    except:
-        print("Couldn't load extended workout cache.")
-        ext_workouts_cache = {}
+    athletes_cache = load_cache(athletes_cache_file)
+    ext_workouts_cache = load_cache(extended_cache_file)
 else:
-        athletes_cache = {}
-        ext_workouts_cache = {}
+    athletes_cache = {}
+    ext_workouts_cache = {}
 
 ranking_tables = C2scrape.generate_C2Ranking_urls(config["url_query_parameters"], config["url_parameters"]["url_years"], config["url_parameters"]["url_events"], config["url_parameters"]["url_base"])
 num_ranking_tables = len(ranking_tables)
