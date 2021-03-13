@@ -2,7 +2,7 @@
 
 Scrapes the Concept2 Logbook site (log.concept2.com) and saves the information in JSON format. Uses multi-threading to spead up the scraping process (~ linear with the number of threads but please be kind to the server!)
 
-Currently only captures information from the rankings (https://log.concept2.com/rankings).
+Currently only captures data from the rankings (https://log.concept2.com/rankings). It does not record athlete logbook entries that are not ranked.
 
 ## Starting the Scraper
 The default configuration options should be suitable for most systems. See [Configuration](#configuration) for available options.
@@ -20,10 +20,10 @@ The following options can be configured:
 Integer. Specify the maximum number of ranking tables the program should visit. Useful for verifying the program will run to completion on your system before begining a long run. Normally can be left blank ("").
 
 ### use_cache
-Boolean. Set to true to utilize cached files. This can significantly increase speed. See [caching][#caching].
+Boolean. Set to true to utilize cached files. This can significantly increase speed. See [caching][#caching]. If set to false, the scraper will neither read nor write cache files.
 
 ### threads
-Integer. Specifify the maximum number of worker threads to use. See [Multi-Threading](#multi-threading).
+Integer. Specifify the maximum number of worker threads to use. See [Multi-Threading](#multi-threading). Set this to 0 if both (get_profile_data)[#get_profile_data] and (get_extended_workout_data)[#get_extended_workout_data] are set to false.
 
 ### Output File Paths
 workouts_file/athletes_file/extended_file/athletes_cache_file/extended_cache_file.
@@ -71,14 +71,32 @@ The root URL of the Concept2 Logbook rankings.
 List of integers. The year(s) of ranking boards that will be scraped.
 
 ## Multi-Threading
-TODO
+The scraper uses multi-threading to speed up the scraping process. The scraper is rate limited by the speed at which it recieved its URL requests.
+
+Multi-threading is optimised for scraping athlete profiles and extended workout profiles. The master process visits each ranking table page in turn, and adds each athlete profile and extended workout profile to a work queue. The worker threads then visit these URLs in turn and scrape the data.
+
+As this scraper is not I/O or processer limited, you can have more threads than CPU cores and still experience a speed up.
+
+The more worker threads present, the more load is put on the Concept2 Logbook server, please consider this when setting the number of threads. This developer's experience is that a URL request to the logbook takes about 1 second.
+
+If scraping for athlete profile and extended workout profiles is disabled, the scraper will not be spead up with additional threads.
 
 ## Output
-TODO
+The scraper produces up to 5 output files.
+### Workouts
+
+### Extended Workout Profiles
+
+### Athlete Profiles
+
+### Extended Workout Profile Cache
+
+### Athlete Profile Cache
 
 ## Cleaning and Analysis
 TODO
 
 ## Caching
+The scraper uses caching to minimize the number of URL requests to speed up the scraping process. With caching enabled the scraper will not make additional URL requests for athlete profiles or extended workout profiles that have been cached. This is particular effective when scraping multiple ranking boards and scraping athlete profile data as athletes are present on multiple boards.
 
 ##
