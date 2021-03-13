@@ -153,10 +153,10 @@ def thread_get_profile(profile):
                 profile.data = get_ext_workout_profile(r)
                 profile.data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
 
-        profile.lock.acquire() #dict.update is thread safe but json.dumps is not, need to hold here when printing output
-        profile.profile_list.update({profile.profile_id:profile.data})
-        profile.profile_cache.update({profile.profile_id:profile.data})
-        profile.lock.release()
+    profile.lock.acquire() #dict.update is thread safe but json.dumps is not, need to hold here when printing output
+    profile.profile_list.update({profile.profile_id:profile.data})
+    profile.profile_cache.update({profile.profile_id:profile.data})
+    profile.lock.release()
 
 def get_athlete_profile(r):
     #r: requests object

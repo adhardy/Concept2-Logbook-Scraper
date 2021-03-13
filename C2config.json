@@ -1,13 +1,13 @@
 {
     "max_ranking_tables":"",
     "columns_per_page":50,
-    "use_cache":false,
+    "use_cache":true,
     "threads":15,
-    "workouts_file":"output/C2Workouts.json",
-    "athletes_file":"output/C2Athletes.json",
-    "extended_file":"output/C2Extended.json",
-    "athletes_cache_file":"output/C2Athletes_cache.json",
-    "extended_cache_file":"output/C2Extended_cache.json",
+    "workouts_file":"output/2020/C2Workouts.json",
+    "athletes_file":"output/2020/C2Athletes.json",
+    "extended_file":"output/2020/C2Extended.json",
+    "athletes_cache_file":"cache/C2Athletes_cache.json",
+    "extended_cache_file":"cache/C2Extended_cache.json",
     "url_profile_base":"https://log.concept2.com/profile/",
     "write_buffer":60,
     "get_extended_workout_data":true,
@@ -43,6 +43,6 @@
     },
     "url_parameters":{
         "url_base" : "https://log.concept2.com/rankings",
-        "url_years" :[2021]
+        "url_years" :[2020]
     }
 }
