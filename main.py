@@ -7,7 +7,7 @@ import threading
 from datetime import datetime, date
 from time import strftime,gmtime
 import time #sleep
-
+import sys
 import requests
 
 config = {}
@@ -44,8 +44,11 @@ s = requests.session()
 if C2_login:
     response = C2Scrape.C2_login(s, url_login, C2_username, C2_password)
     if response.url != url_login_success:
-        print("Unable to login to the logbook, quitting.")
-        quit
+        sys.exit("Unable to login to the logbook, quitting.")
+    else:
+        print("Login")
+else:
+    print("Loggin set to false, not loggin in")
 
 # initializing threads
 THREADS = config["threads"]
