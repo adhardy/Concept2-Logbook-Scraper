@@ -8,6 +8,8 @@ from datetime import datetime, date
 from time import strftime,gmtime
 import time #sleep
 
+import requests
+
 config = {}
 try:
     fo = open("C2config.json")
@@ -30,6 +32,7 @@ for i in range(THREADS): #TODO update all these loops with len(threads)
     threads[i].start()
 
 #load config into easy to use vars
+url_login_success = "https://log.concept2.com/log"
 write_buffer = config["write_buffer"] #write every X ranking pages
 get_extended_workout_data = config["get_extended_workout_data"]
 get_profile_data = config["get_profile_data"]
@@ -39,10 +42,22 @@ extended_file = config["extended_file"]
 athletes_cache_file = config["athletes_cache_file"]
 extended_cache_file = config["extended_cache_file"]
 url_profile_base = config["url_profile_base"]
-
+url_login = config["url_login"]
+#TODO move loading of username password to environment vars rather than config file
+C2_login = config["C2_login"]
+C2_username = config["C2_username"]
+C2_password = config["C2_password"]
 athletes = {}
 workouts = {}
 ext_workouts = {}
+
+#create session for login
+s = requests.session()
+if C2_login:
+    response = C2Scrape.C2_login(s, url_login, C2_username, C2_password)
+    if response.url != url_login_success:
+        print("Unable to login to the logbook, quitting.")
+        quit
 
 #backup previous output
 for file in [workouts_file, athletes_file, extended_file, athletes_cache_file, extended_cache_file]:

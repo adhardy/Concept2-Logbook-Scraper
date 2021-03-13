@@ -265,3 +265,13 @@ def backup_file(path):
 
 def check_write_buffer(timestamp_last_write, write_buffer):
     return datetime.now().timestamp() > timestamp_last_write + write_buffer
+
+def C2_login(session, url_login, username, password):
+    login = session.get(url_login)
+    login_tree = html.fromstring(login.text)
+    hidden_inputs = login_tree.xpath(r'//form//input[@type="hidden"]')
+    form = {x.attrib["name"]: x.attrib["value"] for x in hidden_inputs} #get csrf token
+    form['username'] = username
+    form['password'] = password
+    response = session.post(url_login, data=form)
+    return response
