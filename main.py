@@ -19,18 +19,6 @@ except:
     print("Could not open config file. Quitting")
     quit()
 
-# initializing threads
-THREADS = config["threads"]
-threads = []
-profile_queue = queue.Queue()
-lock = threading.Lock()
-for i in range(THREADS):
-    threads.append(C2Scrape.ProfileThread(str(i), profile_queue))
-
-# start the threads
-for i in range(THREADS): #TODO update all these loops with len(threads)
-    threads[i].start()
-
 #load config into easy to use vars
 url_login_success = "https://log.concept2.com/log"
 write_buffer = config["write_buffer"] #write every X ranking pages
@@ -58,6 +46,18 @@ if C2_login:
     if response.url != url_login_success:
         print("Unable to login to the logbook, quitting.")
         quit
+
+# initializing threads
+THREADS = config["threads"]
+threads = []
+profile_queue = queue.Queue()
+lock = threading.Lock()
+for i in range(THREADS):
+    threads.append(C2Scrape.ProfileThread(str(i), profile_queue))
+
+# start the threads
+for i in range(THREADS): #TODO update all these loops with len(threads)
+    threads[i].start()
 
 #backup previous output
 for file in [workouts_file, athletes_file, extended_file, athletes_cache_file, extended_cache_file]:
