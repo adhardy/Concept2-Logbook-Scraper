@@ -91,7 +91,7 @@ queue_added = 0 #counts the total number of objects added to the queue
 #main loop for master process over each ranking table
 for ranking_table in ranking_tables[0:num_ranking_tables+1]: 
     ranking_table_count += 1
-    r = C2Scrape.get_url(ranking_table.url_string)
+    r = C2Scrape.get_url(s, ranking_table.url_string)
 
     #find the number of pages for this ranking table
     if r != None:
@@ -113,7 +113,7 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
         if page > 1:
             #don't get the first page again (if page is ommitted, page 1 is loaded)
             workouts_page=[]
-            r = C2Scrape.get_url(url_string)
+            r = C2Scrape.get_url(s, url_string)
         #master process checks each row, adds URLs to queue for threads to visit
         if r != None:
             tree = html.fromstring(r.text)
@@ -150,11 +150,11 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
                         
                         if get_profile_data and profile_ID != None:
                             #add athlete profile object to thread queue
-                            profile_queue.put(C2Scrape.Profile(profile_ID, "athlete", url_profile_base + profile_ID, athletes, athletes_cache, lock))
+                            profile_queue.put(C2Scrape.Profile(profile_ID, "athlete", url_profile_base + profile_ID, athletes, athletes_cache, lock, s))
                             queue_added += 1
 
                         if get_extended_workout_data:
-                            profile_queue.put(C2Scrape.Profile(workout_ID, "ext_workout", workout_info_link, ext_workouts, ext_workouts_cache, lock))
+                            profile_queue.put(C2Scrape.Profile(workout_ID, "ext_workout", workout_info_link, ext_workouts, ext_workouts_cache, lock, s))
                             queue_added += 1
 
         #after each page, check to see if we should write to file
