@@ -71,7 +71,7 @@ The root URL of the Concept2 Logbook rankings.
 List of integers. The year(s) of ranking boards that will be scraped.
 
 ## Multi-Threading
-The scraper uses multi-threading to speed up the scraping process. The scraper is rate limited by the speed at which it recieved its URL requests.
+The scraper uses multi-threading, provided by the threading module, to speed up the scraping process. The scraper is rate limited by the speed at which it recieved its URL requests.
 
 Multi-threading is optimised for scraping athlete profiles and extended workout profiles. The master process visits each ranking table page in turn, and adds each athlete profile and extended workout profile to a work queue. The worker threads then visit these URLs in turn and scrape the data.
 
