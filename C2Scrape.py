@@ -178,7 +178,7 @@ def get_athlete_profile(r):
         athlete_profile["availablity"] = "logged in"
     elif "<div class=\"stats\">" in r.text:
         #stat boxes only appear when profile is accessible
-        athlete_profile["availablity"] = "public"
+        athlete_profile["availablity"] = "available"
     elif "This user's profile is only accessible to training partners." in r.text:
         athlete_profile["availablity"] = "training partner"
     else:
