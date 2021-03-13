@@ -31,7 +31,7 @@ class RankingPage():
 
 class Profile:
     #holds all the information needed for the worker threads to visit this profile and scrape data
-    def __init__(self, profile_id, profile_type, url, profile_list, profile_cache, lock):
+    def __init__(self, profile_id, profile_type, url, profile_list, profile_cache, lock,session):
         self.profile_id = profile_id
         self.profile_type = profile_type
         self.url = url
@@ -39,6 +39,7 @@ class Profile:
         self.profile_cache = profile_cache
         self.data = None #json object with the profile data
         self.lock = lock
+        self.session = session
 
 class ProfileThread(threading.Thread):
     #define how the threads function
@@ -73,9 +74,9 @@ class ProfileThread(threading.Thread):
         super().join(timeout)
         print(f" ** Joined thread - {self.name}")
 
-def get_url(url, exception_on_error = False):
+def get_url(session, url, exception_on_error = False):
     try:
-        r = requests.get(url)
+        r = session.get(url)
         if r.status_code == 200:
             return r
         else:
@@ -142,7 +143,7 @@ def thread_get_profile(profile):
     if profile.profile_id in profile.profile_cache.keys():
         profile.data = profile.profile_cache[profile.profile_id]#retrieve from cache
     else:
-        r = get_url(profile.url)
+        r = get_url(profile.session, profile.url)
         if r != None:
             if profile.profile_type == "athlete":
                 profile.data = get_athlete_profile(r)
@@ -177,7 +178,7 @@ def get_athlete_profile(r):
         athlete_profile["availablity"] = "logged in"
     elif "<div class=\"stats\">" in r.text:
         #stat boxes only appear when profile is accessible
-        athlete_profile["availablity"] = "public"
+        athlete_profile["availablity"] = "available"
     elif "This user's profile is only accessible to training partners." in r.text:
         athlete_profile["availablity"] = "training partner"
     else:
@@ -265,3 +266,13 @@ def backup_file(path):
 
 def check_write_buffer(timestamp_last_write, write_buffer):
     return datetime.now().timestamp() > timestamp_last_write + write_buffer
+
+def C2_login(session, url_login, username, password):
+    login = session.get(url_login)
+    login_tree = html.fromstring(login.text)
+    hidden_inputs = login_tree.xpath(r'//form//input[@type="hidden"]')
+    form = {x.attrib["name"]: x.attrib["value"] for x in hidden_inputs} #get csrf token
+    form['username'] = username
+    form['password'] = password
+    response = session.post(url_login, data=form)
+    return response

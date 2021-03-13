@@ -8,6 +8,8 @@ from datetime import datetime, date
 from time import strftime,gmtime
 import time #sleep
 
+import requests
+
 config = {}
 try:
     fo = open("C2config.json")
@@ -30,6 +32,7 @@ for i in range(THREADS): #TODO update all these loops with len(threads)
     threads[i].start()
 
 #load config into easy to use vars
+url_login_success = "https://log.concept2.com/log"
 write_buffer = config["write_buffer"] #write every X ranking pages
 get_extended_workout_data = config["get_extended_workout_data"]
 get_profile_data = config["get_profile_data"]
@@ -39,10 +42,22 @@ extended_file = config["extended_file"]
 athletes_cache_file = config["athletes_cache_file"]
 extended_cache_file = config["extended_cache_file"]
 url_profile_base = config["url_profile_base"]
-
+url_login = config["url_login"]
+#TODO move loading of username password to environment vars rather than config file
+C2_login = config["C2_login"]
+C2_username = config["C2_username"]
+C2_password = config["C2_password"]
 athletes = {}
 workouts = {}
 ext_workouts = {}
+
+#create session for login
+s = requests.session()
+if C2_login:
+    response = C2Scrape.C2_login(s, url_login, C2_username, C2_password)
+    if response.url != url_login_success:
+        print("Unable to login to the logbook, quitting.")
+        quit
 
 #backup previous output
 for file in [workouts_file, athletes_file, extended_file, athletes_cache_file, extended_cache_file]:
@@ -76,7 +91,7 @@ queue_added = 0 #counts the total number of objects added to the queue
 #main loop for master process over each ranking table
 for ranking_table in ranking_tables[0:num_ranking_tables+1]: 
     ranking_table_count += 1
-    r = C2Scrape.get_url(ranking_table.url_string)
+    r = C2Scrape.get_url(s, ranking_table.url_string)
 
     #find the number of pages for this ranking table
     if r != None:
@@ -98,7 +113,7 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
         if page > 1:
             #don't get the first page again (if page is ommitted, page 1 is loaded)
             workouts_page=[]
-            r = C2Scrape.get_url(url_string)
+            r = C2Scrape.get_url(s, url_string)
         #master process checks each row, adds URLs to queue for threads to visit
         if r != None:
             tree = html.fromstring(r.text)
@@ -135,11 +150,11 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
                         
                         if get_profile_data and profile_ID != None:
                             #add athlete profile object to thread queue
-                            profile_queue.put(C2Scrape.Profile(profile_ID, "athlete", url_profile_base + profile_ID, athletes, athletes_cache, lock))
+                            profile_queue.put(C2Scrape.Profile(profile_ID, "athlete", url_profile_base + profile_ID, athletes, athletes_cache, lock, s))
                             queue_added += 1
 
                         if get_extended_workout_data:
-                            profile_queue.put(C2Scrape.Profile(workout_ID, "ext_workout", workout_info_link, ext_workouts, ext_workouts_cache, lock))
+                            profile_queue.put(C2Scrape.Profile(workout_ID, "ext_workout", workout_info_link, ext_workouts, ext_workouts_cache, lock, s))
                             queue_added += 1
 
         #after each page, check to see if we should write to file
