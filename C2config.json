@@ -1,6 +1,5 @@
 {
     "max_ranking_tables":"",
-    "columns_per_page":50,
     "use_cache":true,
     "threads":15,
     "workouts_file":"output/2020/C2Workouts.json",
