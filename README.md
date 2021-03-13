@@ -5,9 +5,13 @@ Scrapes the Concept2 Logbook site (log.concept2.com) and saves the information i
 Currently only captures information from the rankings (https://log.concept2.com/rankings).
 
 ## Starting the Scraper
-TODO
+The default configuration options should be suitable for most systems. See [Configuration](#configuration) for available options.
 
-## Config
+If using the default configuration, you will need to create an "output" and a "cache" folder in the project root directory.
+
+To run the scraper, run main.py using python.
+
+## Configuration
 The congiguration is a JSON file called "C2config.json", and should be in the root directory of the project. An example configuration is included in the repo. All are taken as strings unless otherwise specified.
 
 The following options can be configured:
@@ -42,7 +46,7 @@ Username for logging in to the Concept2 logbook.
 Password for logging in to the Concept2 logbook.
 
 ### write_buffer
-Integer (seconds). The length of time between writing output files. The main process must suspend threads while writing output which takes a few seconds as the files grow in size. Recomend setting this to 60 seconds.
+Integer (seconds). The length of time between writing output files. The main process must suspend threads while writing output which takes a few seconds as the files grow in size. The main process checks the elapsed time between writing output files at the end of processing each ranking page. Recomended setting is 60 seconds or greater.
 
 ### get_profile_data
 Scrape data from athlete profiles that the program finds while visiting the ranking tables. This requires an extra URL request per profile but this can be mitigated across multiple ranking tables by using [caching](#caching]. See [Output](#output).
@@ -50,13 +54,21 @@ Scrape data from athlete profiles that the program finds while visiting the rank
 ### get_extended_workout_data
 Scrape additional data about the workout by visiting the workout link on the ranking page. This requires an extra URL request per workout. See [Output](#output).
 
-### Query Parameters
-Exactly 4 parameters must be present. If a query parameter has no values in the list, the list must be populated with "".
-If you want to omit a query parameter (for example, if you do not want to filter by an adaptive category), use an empty ("") entry in the list
+### machine_parameters
+These settings determine which events, types of machine, weight class, gender and adaptive categories will be visited. The program will visit all combinations of ranking tables for the given options. Can be different for each type of machine (row, bike and ski erg). The default congiguration contains every option.
 
-### max_ranking_tables
+#### query parameters
+List of strings. Exactly 4 parameters are required for each machine but they can be empty. For example, "rower" and "weight" are only used for the row erg.
 
-### use_cache
+#### events
+List of integers. At least one should be present.
+
+### url_parameters
+#### url_base
+The root URL of the Concept2 Logbook rankings.
+
+#### url_years
+List of integers. The year(s) of ranking boards that will be scraped.
 
 ## Multi-Threading
 TODO
