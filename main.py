@@ -183,13 +183,15 @@ while not profile_queue.empty():
         timestamp_last_write = datetime.now().timestamp()
     lock.release()
 
+#final write
+C2Scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
+if config["use_cache"] == True:
+    C2Scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
+
 if profile_queue.empty():
     #join threads
     for i in range(THREADS):
         threads[i].join()
 
-#final write
-C2Scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
-if config["use_cache"] == True:
-    C2Scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
+
 
