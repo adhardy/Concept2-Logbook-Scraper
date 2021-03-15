@@ -1,6 +1,6 @@
 old_files
 cache_backups
-output
+output*
 C2Athletes*.json
 C2Extended*.json
 C2Rankings*.json
@@ -9,4 +9,4 @@ __pycache__
 .ipynb_checkpoints
 output_multi
 *_backup
-
+html_samples
