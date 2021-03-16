@@ -208,6 +208,7 @@ def C2_login(session, url_login, username, password):
     return response
 
 def get_athlete(job):
+    #TODO these job functions will fail fairly silently (error prints will get swallowed up by other console output) if a none 200 response code or on connection error
     #function executed by thread, updates cache and data dictionary
 
     job_data = {}
@@ -220,15 +221,16 @@ def get_athlete(job):
         if job.id in cache.keys():
             job_data = cache[job.id]#retrieve from cache
         else:
-            job.get_url(job.thread) #get the URL
-            if job.request.status_code == 200: #check that a URL was recieved OK
-                job_data = get_athlete_data(job.request)
-                job_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
-                job.lock.acquire()
-                cache.update({job.id:job_data}) #cache
-                job.lock.release()
-            else:
-                print(f"There was a problem with {job.url}, status code: {job.request.status_code}")
+            get_url_success = job.get_url() #get the URL
+            if get_url_success:
+                if job.request.status_code == 200: #check that the URL was recieved OK
+                    job_data = get_athlete_data(job.request)
+                    job_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
+                    job.lock.acquire()
+                    cache.update({job.id:job_data}) #cache
+                    job.lock.release()
+                else:
+                    print(f"There was a problem with {job.url}, status code: {job.request.status_code}")
 
         job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
         athletes.update({job.id:job_data}) #main data
@@ -247,15 +249,16 @@ def get_ext_workout(job):
         if job.id in cache.keys():
             job_data = cache[job.id]#retrieve from cache
         else:
-            job.get_url() #get the URL
-            if job.request.status_code == 200: #check that a URL was recieved OK
-                job_data = get_ext_workout_data(job.request)
-                job_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
-                job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
-                cache.update({job.id:job_data}) #cache
-                job.lock.release()
-            else:
-                print(f"There was a problem with {job.url}, status code: {job.request.status_code}")
+        get_url_success = job.get_url() #get the URL
+        if get_url_success:
+            if job.request.status_code == 200: #check that the URL was recieved OK
+                    job_data = get_ext_workout_data(job.request)
+                    job_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
+                    job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
+                    cache.update({job.id:job_data}) #cache
+                    job.lock.release()
+                else:
+                    print(f"There was a problem with {job.url}, status code: {job.request.status_code}")
 
         job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
         ext_workouts.update({job.id:job_data}) #main data

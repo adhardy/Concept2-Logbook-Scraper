@@ -84,11 +84,14 @@ class Job:
             self.lock = self.thread.lock
 
     def get_url(self):
-    """Make a get request to Job.url. Sets Job.request to the result, or -1 if it fails to connect to the server"""
+        """Make a get request to Job.url. Sets Job.request to the result, returns 1 upon an error"""
         try:
             self.request = self.thread.session.get(self.url)               
         except requests.exceptions.ConnectionError:
-            self.request = -1
+            self.request = None
+            return False
+
+        return True
 
 
 def job_function_template(job):
@@ -103,11 +106,12 @@ def job_function_template(job):
     job_data = job.custom_data[0] #in this example, a dictionary which contains the data being scraped
     job_type = job.custom_data[1] #in this example, a string
 
-    job.get_url() #get the URL
-    if job.request.status_code == 200: #check that the URL was recieved OK
-        job.lock.acquire() #update/append are thread safe but other operations elsewhere (e.g. JSON.dumps) might not be
-        if job.type == "jobtype1": #do something
-            job.custom_data.update({"key1":"val3", "key2":"val4"})
-        if job.type == "jobtype2": #do something different
-            job.custom_data.update({"key1":"val3", "key2":"val4"})
-        job.lock.release()
+    get_url_success = job.get_url() #get the URL
+    if get_url_success:
+        if job.request.status_code == 200: #check that the URL was recieved OK
+            job.lock.acquire() #update/append are thread safe but other operations elsewhere (e.g. JSON.dumps) might not be
+            if job.type == "jobtype1": #do something
+                job.custom_data.update({"key1":"val3", "key2":"val4"})
+            if job.type == "jobtype2": #do something different
+                job.custom_data.update({"key1":"val3", "key2":"val4"})
+            job.lock.release()
