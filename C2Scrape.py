@@ -223,10 +223,12 @@ def get_athlete(job):
         if job.request != None: #check that a URL was recieved OK
             job_data = get_athlete_data(job.request)
             job_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
+            job.lock.acquire()
+            cache.update({job.id:job_data}) #cache
+            job.lock.release()
 
     job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
     athletes.update({job.id:job_data}) #main data
-    cache.update({job.id:job_data}) #cache
     job.lock.release()
 
 def get_ext_workout(job):
@@ -245,10 +247,13 @@ def get_ext_workout(job):
         if job.request != None: #check that a URL was recieved OK
             job_data = get_ext_workout_data(job.request)
             job_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
+            job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
+            cache.update({job.id:job_data}) #cache
+            job.lock.release()
+
 
     job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
     ext_workouts.update({job.id:job_data}) #main data
-    cache.update({job.id:job_data}) #cache
     job.lock.release()
 
 
