@@ -9,6 +9,7 @@ from time import strftime,gmtime
 import time #sleep
 import sys
 import requests
+#TODO: os.path.join(),aws rds
 
 config = {}
 try:

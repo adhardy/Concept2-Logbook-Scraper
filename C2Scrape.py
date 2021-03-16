@@ -7,8 +7,9 @@ import os
 import shutil
 import queue #multithreading
 import threading
-#object to store url and associated workout variables
+
 class RankingPage():
+"""Object to store url and associated workout variables"""
 
     def __init__(self, base_url, year, machine, event, query_parameters={}):
         #query should be a dictionary of url query keys and values
@@ -140,6 +141,8 @@ def generate_C2Ranking_urls(machine_parameters, url_years, url_base):
 def thread_get_profile(profile):
     #check if in cache.
     #Not too concerned about threads colliding here as worst case is that the thread makes an extra URL visit if the cache gets populated with this profile id in between this check and the url visit, profile will just be overwritten in dictionary with the same data
+    #TODO first check if it already exists in profile.data
+    
     if profile.profile_id in profile.profile_cache.keys():
         profile.data = profile.profile_cache[profile.profile_id]#retrieve from cache
     else:
@@ -230,7 +233,7 @@ def write_data(out_files, datas):
     for out_file, data in zip(out_files, datas):
         try:
             fw = open(out_file, "w")
-            output_data = json.dumps(data, indent=2)
+            output_data = json.dumps(data, indent=2) #TODO remove indent, "ensure_ascii = False"
             fw.write(output_data)
             fw.close
             print("Write complete: " + out_file)
