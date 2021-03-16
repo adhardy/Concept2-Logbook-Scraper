@@ -4,12 +4,13 @@ import requests
 
 class Job:
     #holds all the information needed for the worker threads to request a web page and execute job_function
+    #TODO remove cache from this to make it generic, create inherited class in C2Scrape to include it
     def __init__(self, id, job_type, url, main_data, cache):
         self.id = id
         self.type = job_type #allows options to do different things in job_function depending on the type of, for example, web page
         self.url = url
         self.main_data = main_data #a dictionary, data from job_function will be updated to here
-        self.cache = cache  
+        self.cache = cache
         self.request = None
 
     def get_url(self, web_thread, exception_on_error = False):
