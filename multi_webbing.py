@@ -1,4 +1,4 @@
-import queue #multithreading
+import queue
 import threading
 import requests
 
