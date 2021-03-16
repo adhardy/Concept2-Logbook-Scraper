@@ -234,7 +234,7 @@ def get_ext_workout(job):
     if job.id in job.cache.keys():
         data = job.cache[job.id]#retrieve from cache
     else:
-        job.get_url(job.thread) #get the URL
+        job.get_url() #get the URL
         if job.request != None: #check that a URL was recieved OK
             data = get_ext_workout_data(r)
             data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())

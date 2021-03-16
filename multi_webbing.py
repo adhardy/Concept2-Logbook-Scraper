@@ -84,11 +84,11 @@ class Job:
         """allows access to thread attributes(e.g. session, lock) that may be needed for the job function"""
         self.thread = thread
 
-    def get_url(self, thread, exception_on_error = False):
+    def get_url(self, exception_on_error = False):
     #TODO this will currently fail silently when exception on error = False, maybe add a log?
     #TODO error handing in general needs work here
         try:
-            r = thread.session.get(self.url)
+            r = self.thread.session.get(self.url)
             if r.status_code == 200:
                 self.request = r
             else:
