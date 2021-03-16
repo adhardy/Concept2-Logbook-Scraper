@@ -221,12 +221,14 @@ def get_athlete(job):
             job_data = cache[job.id]#retrieve from cache
         else:
             job.get_url(job.thread) #get the URL
-            if job.request != None: #check that a URL was recieved OK
+            if job.request.status_code == 200: #check that a URL was recieved OK
                 job_data = get_athlete_data(job.request)
                 job_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
                 job.lock.acquire()
                 cache.update({job.id:job_data}) #cache
                 job.lock.release()
+            else:
+                print(f"There was a problem with {job.url}, status code: {job.request.status_code}")
 
         job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
         athletes.update({job.id:job_data}) #main data
@@ -246,17 +248,15 @@ def get_ext_workout(job):
             job_data = cache[job.id]#retrieve from cache
         else:
             job.get_url() #get the URL
-            if job.request != None: #check that a URL was recieved OK
+            if job.request.status_code == 200: #check that a URL was recieved OK
                 job_data = get_ext_workout_data(job.request)
                 job_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
                 job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
                 cache.update({job.id:job_data}) #cache
                 job.lock.release()
+            else:
+                print(f"There was a problem with {job.url}, status code: {job.request.status_code}")
 
         job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
         ext_workouts.update({job.id:job_data}) #main data
         job.lock.release()
-
-
-
-

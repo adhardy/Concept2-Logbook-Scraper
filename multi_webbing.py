@@ -104,7 +104,7 @@ def job_function_template(job):
     job_type = job.custom_data[1] #in this example, a string
 
     job.get_url() #get the URL
-    if job.request != None: #check that a URL was recieved OK, will be None if there as a problem
+    if job.request.status_code == 200: #check that the URL was recieved OK
         job.lock.acquire() #update/append are thread safe but other operations elsewhere (e.g. JSON.dumps) might not be
         if job.type == "jobtype1": #do something
             job.custom_data.update({"key1":"val3", "key2":"val4"})
