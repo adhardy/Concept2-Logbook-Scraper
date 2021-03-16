@@ -58,7 +58,7 @@ threads = []
 job_queue = queue.Queue()
 lock = threading.Lock()
 for i in range(THREADS):
-    threads.append(mw.WebThread(str(i), job_queue, lock, s, C2Scrape.get_profile))
+    threads.append(mw.Thread(str(i), job_queue, lock, s, C2Scrape.get_profile))
 
 # start the threads
 for i in range(THREADS): #TODO update all these loops with len(threads)

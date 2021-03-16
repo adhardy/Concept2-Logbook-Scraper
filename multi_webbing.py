@@ -30,7 +30,7 @@ class Job:
                 raise ValueError(f"Could not access url: {url}")
          
 
-class WebThread(threading.Thread):
+class Thread(threading.Thread):
     #define how the threads function
     def __init__(self, name, job_queue, lock, session, job_function):
         threading.Thread.__init__(self)
