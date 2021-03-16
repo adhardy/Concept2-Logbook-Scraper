@@ -71,18 +71,24 @@ class Thread(threading.Thread):
 class Job:
     #holds all the information needed for the worker threads to make a request and execute the job_function
     #TODO remove cache from this to make it generic, create inherited class in C2Scrape to include it
-    def __init__(self, id, function, url, main_data, cache):
-        self.id = id
+    def __init__(self, job_id, function, url, main_data, cache, session = None, lock = None):
+        self.id = job_id #will be made the key in main_data, should be unique
         self.url = url
         self.main_data = main_data #dictionary, data from job_function will be updated to here
         self.cache = cache
         self.request = None
         self.function = function
-        self.session = None
+        self.session = None #can set session and lock per job, or can leave unset and attributes will be taken from thread
+        self.lock = None
 
     def set_thread(self, thread):
         """allows access to thread attributes(e.g. session, lock) that may be needed for the job function"""
         self.thread = thread
+        # if not set in init, use thread session and lock 
+        if self.session == None:
+            self.session = self.thread.session
+        if self.lock == None:
+            self.lock = self.thread.lock
 
     def get_url(self, exception_on_error = False):
     #TODO this will currently fail silently when exception on error = False, maybe add a log?
@@ -105,13 +111,12 @@ class Job:
 def job_function_template(job):
     """not used, template code for a job_function"""
     job_data = {}
-
-    #the thread makes the URL request, you can access the request object from Job object
+    job.get_url() #get the URL
     if job.request != None: #check that a URL was recieved OK, will be None if there as a problem
         if job.type == "jobtype1": #do something
             job_data = {"key1":"val1", "key2":"val2"}
         if job.type == "jobtype2": #do something different
             job_data = {"key1":"val3", "key2":"val4"}
 
-    return job_data
+    return job_data #this will be updated in job.main_data, will overwrite anything with the same ID
     

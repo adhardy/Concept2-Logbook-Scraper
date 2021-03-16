@@ -227,7 +227,7 @@ def get_athlete(job):
 def get_ext_workout(job):
     #function executed by thread, should return a dictionary that will be updated to the main data structure by the thread
     #TODO first check if it already exists in job.data
-    #TODO check cache check is working
+
     data = {}
     
     #check if in cache.
