@@ -1,4 +1,5 @@
 import C2Scrape
+import multi_webbing as mw
 import string
 import json
 from lxml import etree, html #reading html 
@@ -57,7 +58,7 @@ threads = []
 profile_queue = queue.Queue()
 lock = threading.Lock()
 for i in range(THREADS):
-    threads.append(C2Scrape.ProfileThread(str(i), profile_queue))
+    threads.append(mw.ProfileThread(str(i), profile_queue))
 
 # start the threads
 for i in range(THREADS): #TODO update all these loops with len(threads)
@@ -154,11 +155,11 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
                         
                         if get_profile_data and profile_ID != None:
                             #add athlete profile object to thread queue
-                            profile_queue.put(C2Scrape.Profile(profile_ID, "athlete", url_profile_base + profile_ID, athletes, athletes_cache, lock, s))
+                            profile_queue.put(mw.Profile(profile_ID, "athlete", url_profile_base + profile_ID, athletes, athletes_cache, lock, s))
                             queue_added += 1
 
                         if get_extended_workout_data:
-                            profile_queue.put(C2Scrape.Profile(workout_ID, "ext_workout", workout_info_link, ext_workouts, ext_workouts_cache, lock, s))
+                            profile_queue.put(mw.Profile(workout_ID, "ext_workout", workout_info_link, ext_workouts, ext_workouts_cache, lock, s))
                             queue_added += 1
 
         #after each page, check to see if we should write to file
