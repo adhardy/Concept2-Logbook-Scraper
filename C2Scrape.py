@@ -160,7 +160,7 @@ def write_data(out_files, datas):
     for out_file, data in zip(out_files, datas):
         try:
             fw = open(out_file, "w")
-            output_data = json.dumps(data) #"ensure_ascii = False"
+            output_data = json.dumps(data, ensure_ascii = False)
             fw.write(output_data)
             fw.close
             print("Write complete: " + out_file)
