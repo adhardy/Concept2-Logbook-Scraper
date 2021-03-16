@@ -208,9 +208,8 @@ def C2_login(session, url_login, username, password):
     return response
 
 def get_athlete(job):
-    #function executed by thread, should return a dictionary that will be updated to the main data structure by the thread
-    #TODO first check if it already exists in job.data
-    #TODO check cache check is working
+    #function executed by thread, updates cache and data dictionary
+
     job_data = {}
     athletes = job.custom_data[0]
     cache = job.custom_data[1]
@@ -234,8 +233,7 @@ def get_athlete(job):
         job.lock.release()
 
 def get_ext_workout(job):
-    #function executed by thread, should return a dictionary that will be updated to the main data structure by the thread
-    #TODO first check if it already exists in job.data
+    #function executed by thread, updates cache and data dictionary
 
     job.data = {}
     ext_workouts = job.custom_data[0]
@@ -258,6 +256,7 @@ def get_ext_workout(job):
         job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
         ext_workouts.update({job.id:job_data}) #main data
         job.lock.release()
+
 
 
 
