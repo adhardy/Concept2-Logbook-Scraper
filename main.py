@@ -105,7 +105,7 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
             #no pagination block, only one page
             pages = 1
     
-    for page in range(1,pages+1):
+    for page in range(1):#range(1,pages+1):
         #master process sub-loop over each page
         url_string = ranking_table.url_string + "&page=" + str(page)
 
@@ -159,36 +159,34 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
 
         #after each page, check to see if we should write to file
         if C2Scrape.check_write_buffer(timestamp_last_write, write_buffer):
-            lock.acquire()
+            threads.lock.acquire()
             C2Scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
             if config["use_cache"]:
                 C2Scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
             timestamp_last_write = datetime.now().timestamp()
-            lock.release()
+            threads.lock.release()
 
 print("Finished scraping ranking tables, waiting for profile threads to finish...")
 
 # wait for queue to be empty, then join the threads
-while not job_queue.empty():
+while not threads.job_queue.empty():
     time.sleep(1)
     print(f"Queue size: {str(threads.job_queue.qsize())}/{queue_added}")
-    lock.acquire()
+    threads.lock.acquire()
     if C2Scrape.check_write_buffer(timestamp_last_write, write_buffer):
         C2Scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
         if config["use_cache"] == True:
             C2Scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
         timestamp_last_write = datetime.now().timestamp()
-    lock.release()
+    threads.lock.release()
 
 #final write
 C2Scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
 if config["use_cache"] == True:
     C2Scrape.write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
 
-if job_queue.empty():
+if threads.job_queue.empty():
     #join threads
-    for i in range(THREADS):
-        threads[i].join()
+    threads.finish()
 
-
-
+print("Finished!")

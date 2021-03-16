@@ -17,6 +17,10 @@ class Threading():
         for thread in self.threads:
             thread.start()
 
+    def finish():
+        for thread in self.threads:
+            thread.join()
+
 class Thread(threading.Thread):
     #define how the threads function
     #TODO add verbosity for more detailed output options
