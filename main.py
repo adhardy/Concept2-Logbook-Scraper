@@ -176,7 +176,7 @@ print("Finished scraping ranking tables, waiting for profile threads to finish..
 # wait for queue to be empty, then join the threads
 while not profile_queue.empty():
     time.sleep(1)
-    print("Queue size: " + str(profile_queue.qsize()))
+    print(f"Queue size: {str(profile_queue.qsize())}/{queue_added}"))
     lock.acquire()
     if C2Scrape.check_write_buffer(timestamp_last_write, write_buffer):
         C2Scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
