@@ -4,34 +4,32 @@ import requests
 
 class Threading():
     """call this class first to initiate MultiWebbing"""
-    def __init__(self, num_threads, job_function):
+    def __init__(self, num_threads):
         self.job_queue = queue.Queue()
         self.lock = threading.Lock()
         self.session = requests.session()
         self.threads = []
-        self.job_function = job_function
         for i in range(num_threads):
-            self.threads.append(Thread(i, self.job_queue, self.lock, self.session, self.job_function))
+            self.threads.append(Thread(i, self.job_queue, self.lock, self.session))
 
     def start(self):
         for thread in self.threads:
             thread.start()
 
-    def finish():
+    def finish(self):
         for thread in self.threads:
             thread.join()
 
 class Thread(threading.Thread):
     #define how the threads function
     #TODO add verbosity for more detailed output options
-    def __init__(self, number, job_queue, lock, session, job_function):
+    def __init__(self, number, job_queue, lock, session):
         threading.Thread.__init__(self)
         self.number = number
         self._stop_event = threading.Event()
         self.job_queue = job_queue
         self.lock = lock
         self.session = session
-        self.job_function = job_function
 
     def run(self):
         #execute on thread.start()
@@ -52,7 +50,7 @@ class Thread(threading.Thread):
                 #execute main thread function
                 job_data = {}
                 job.get_url(self)
-                job_data = self.job_function(job)
+                job_data = job.function(job)
                 #update the data structure with the returned data
                 self.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
                 job.main_data.update({job.id:job_data})
@@ -68,15 +66,16 @@ class Thread(threading.Thread):
         print(f" ** Joined thread - {self.number}")
 
 class Job:
-    #holds all the information needed for the worker threads to request a web page and execute job_function
+    #holds all the information needed for the worker threads to make a request and execute the job_function
     #TODO remove cache from this to make it generic, create inherited class in C2Scrape to include it
-    def __init__(self, id, job_type, url, main_data, cache):
+    #TODO remove job_type move job function from Threading to here to allow more flexible allocation of functions to threads to operate on
+    def __init__(self, id, function, url, main_data, cache):
         self.id = id
-        self.type = job_type #allows options to do different things in job_function depending on the type of, for example, web page
         self.url = url
         self.main_data = main_data #a dictionary, data from job_function will be updated to here
         self.cache = cache
         self.request = None
+        self.function = function
 
     def get_url(self, web_thread, exception_on_error = False):
     #TODO this will currently fail silently when exception on error = False, maybe add a log?

@@ -43,7 +43,7 @@ ext_workouts = {}
 
 # initialize threads
 num_threads = config["threads"]
-threads = mw.Threading(num_threads, C2Scrape.get_profile)
+threads = mw.Threading(num_threads)
 
 #use same session as threads, log in to the website
 s = threads.session
@@ -77,7 +77,7 @@ num_ranking_tables = len(ranking_tables)
 
 #check for override of maximum urls
 if config["max_ranking_tables"] != "":
-    num_ranking_tables = int(config["max_ranking_tables"])-1
+    num_ranking_tables = int(config["max_ranking_tables"])
 
 #initialize output files
 C2Scrape.write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
@@ -89,7 +89,7 @@ ranking_table_count = 0 #counts the number of ranking table objects processed
 queue_added = 0 #counts the total number of objects added to the queue
 
 #main loop for master process over each ranking table
-for ranking_table in ranking_tables[0:num_ranking_tables+1]: 
+for ranking_table in ranking_tables[0:num_ranking_tables]: 
     ranking_table_count += 1
     r = C2Scrape.get_url(s, ranking_table.url_string)
 
@@ -150,11 +150,11 @@ for ranking_table in ranking_tables[0:num_ranking_tables+1]:
                         
                         if get_profile_data and profile_ID != None:
                             #add athlete profile object to thread queue
-                            threads.job_queue.put(mw.Job(profile_ID, "athlete", url_profile_base + profile_ID, athletes, athletes_cache))
+                            threads.job_queue.put(mw.Job(profile_ID, C2Scrape.get_athlete, url_profile_base + profile_ID, athletes, athletes_cache))
                             queue_added += 1
 
                         if get_extended_workout_data:
-                            threads.job_queue.put(mw.Job(workout_ID, "ext_workout", workout_info_link, ext_workouts, ext_workouts_cache))
+                            threads.job_queue.put(mw.Job(workout_ID, C2Scrape.get_ext_workout, workout_info_link, ext_workouts, ext_workouts_cache))
                             queue_added += 1
 
         #after each page, check to see if we should write to file

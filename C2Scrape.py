@@ -89,7 +89,7 @@ def generate_C2Ranking_urls(machine_parameters, url_years, url_base):
                                 urls.append(RankingPage(url_base, url_year, machine_type_key, url_event, query_parameters))
     return urls
 
-def get_athlete_profile(r):
+def get_athlete_data(r):
     #r: requests object
     tree = html.fromstring(r.text)
     #profile labels that are contained in <a> tags
@@ -143,7 +143,7 @@ def get_workout_data(row_tree, column_headings, ranking_table, profile_ID):
         workout_data[key]=val
     return workout_data
     
-def get_ext_workout_profile(r):
+def get_ext_workout_data(r):
     #r: requests object
     tree = html.fromstring(r.text)
     label_tree = tree.xpath('/html/body/div/div/div[1]/strong')
@@ -207,7 +207,7 @@ def C2_login(session, url_login, username, password):
     response = session.post(url_login, data=form)
     return response
 
-def get_profile(job):
+def get_athlete(job):
     #function executed by thread, should return a dictionary that will be updated to the main data structure by the thread
     #TODO first check if it already exists in job.data
     #TODO check cache check is working
@@ -218,12 +218,25 @@ def get_profile(job):
         data = job.cache[job.id]#retrieve from cache
     else:
         if job.request != None: #check that a URL was recieved OK
-            if job.type == "athlete":
-                data = get_athlete_profile(r)
-                data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
+            data = get_athlete_data(r)
+            data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
             
-            if job.type == "ext_workout":
-                data = get_ext_workout_profile(r)
-                data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
+    return data
+
+def get_ext_workout(job):
+    #function executed by thread, should return a dictionary that will be updated to the main data structure by the thread
+    #TODO first check if it already exists in job.data
+    #TODO check cache check is working
+    data = {}
+
+    #check if in cache.
+    if job.id in job.cache.keys():
+        data = job.cache[job.id]#retrieve from cache
+    else:
+        if job.request != None: #check that a URL was recieved OK
+            data = get_ext_workout_profile(r)
+            data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
 
     return data
+
+
