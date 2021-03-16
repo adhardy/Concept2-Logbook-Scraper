@@ -3,8 +3,9 @@ import threading
 import requests
 
 class Threading():
-    """call this class first to initiate MultiWebbing"""
+    """call this class first to initiate MultiWebbing and the individual threads"""
     def __init__(self, num_threads):
+        """Creates a job queue, lock object, session and creates the number of requested threads"""
         self.job_queue = queue.Queue()
         self.lock = threading.Lock()
         self.session = requests.session()
@@ -13,10 +14,12 @@ class Threading():
             self.threads.append(Thread(i, self.job_queue, self.lock, self.session))
 
     def start(self):
+        """Call after initiating a Threading object to start the threads."""
         for thread in self.threads:
             thread.start()
 
     def finish(self):
+        """When you are ready to finish your threads (e.g. when your work queue is empty and you have visited all pages, call this method to stop and join the threads."""
         for thread in self.threads:
             thread.join()
 
@@ -68,11 +71,10 @@ class Thread(threading.Thread):
 class Job:
     #holds all the information needed for the worker threads to make a request and execute the job_function
     #TODO remove cache from this to make it generic, create inherited class in C2Scrape to include it
-    #TODO remove job_type move job function from Threading to here to allow more flexible allocation of functions to threads to operate on
     def __init__(self, id, function, url, main_data, cache):
         self.id = id
         self.url = url
-        self.main_data = main_data #a dictionary, data from job_function will be updated to here
+        self.main_data = main_data #dictionary, data from job_function will be updated to here
         self.cache = cache
         self.request = None
         self.function = function
