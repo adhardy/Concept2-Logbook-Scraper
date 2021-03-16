@@ -37,12 +37,13 @@ url_login = config["url_login"]
 C2_login = config["C2_login"]
 C2_username = config["C2_username"]
 C2_password = config["C2_password"]
+num_threads = config["threads"]
+
 athletes = {}
 workouts = {}
 ext_workouts = {}
 
 # initialize threads
-num_threads = config["threads"]
 threads = mw.Threading(num_threads)
 
 #use same session as threads, log in to the website
@@ -54,7 +55,7 @@ if C2_login:
     else:
         print("Login")
 else:
-    print("Loggin set to false, not loggin in")
+    print("Loggin set to false, not loggin in.")
 
 # start threads
 threads.start()

@@ -220,7 +220,7 @@ def get_athlete(job):
         if job.request != None: #check that a URL was recieved OK
             data = get_athlete_data(r)
             data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
-            
+
     return data
 
 def get_ext_workout(job):
@@ -228,15 +228,15 @@ def get_ext_workout(job):
     #TODO first check if it already exists in job.data
     #TODO check cache check is working
     data = {}
-
+    
     #check if in cache.
     if job.id in job.cache.keys():
         data = job.cache[job.id]#retrieve from cache
     else:
+        job.get_url(job.thread) #get the URL
         if job.request != None: #check that a URL was recieved OK
-            data = get_ext_workout_profile(r)
+            data = get_ext_workout_data(r)
             data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
-
     return data
 
 

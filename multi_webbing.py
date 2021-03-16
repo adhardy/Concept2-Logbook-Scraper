@@ -44,6 +44,7 @@ class Thread(threading.Thread):
             try:
                 #get a job
                 job = self.job_queue.get(block=False)
+                job.set_thread(self) #give job access to thread attributes
 
             except queue.Empty:
                 pass
@@ -52,7 +53,6 @@ class Thread(threading.Thread):
                 #print("Thread " + self.name + ": Getting profile: " + profile.url)
                 #execute main thread function
                 job_data = {}
-                job.get_url(self)
                 job_data = job.function(job)
                 #update the data structure with the returned data
                 self.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
@@ -78,12 +78,17 @@ class Job:
         self.cache = cache
         self.request = None
         self.function = function
+        self.session = None
 
-    def get_url(self, web_thread, exception_on_error = False):
+    def set_thread(self, thread):
+        """allows access to thread attributes(e.g. session, lock) that may be needed for the job function"""
+        self.thread = thread
+
+    def get_url(self, thread, exception_on_error = False):
     #TODO this will currently fail silently when exception on error = False, maybe add a log?
     #TODO error handing in general needs work here
         try:
-            r = web_thread.session.get(self.url)
+            r = thread.session.get(self.url)
             if r.status_code == 200:
                 self.request = r
             else:
@@ -109,3 +114,4 @@ def job_function_template(job):
             job_data = {"key1":"val3", "key2":"val4"}
 
     return job_data
+    
