@@ -217,6 +217,7 @@ def get_athlete(job):
     if job.id in job.cache.keys():
         data = job.cache[job.id]#retrieve from cache
     else:
+        job.get_url(job.thread) #get the URL
         if job.request != None: #check that a URL was recieved OK
             data = get_athlete_data(r)
             data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
