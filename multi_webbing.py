@@ -7,7 +7,7 @@ class Threading():
     def __init__(self, num_threads):
         """Creates a job queue, lock object, session and creates the number of requested threads"""
         self.job_queue = queue.Queue()
-        self.lock = threading.Lock()
+        self.lock = threading.Lock() #session and lock can be overwritten on a per job basis
         self.session = requests.session()
         self.threads = []
         for i in range(num_threads):
@@ -52,13 +52,9 @@ class Thread(threading.Thread):
             else:
                 #print("Thread " + self.name + ": Getting profile: " + profile.url)
                 #execute main thread function
-                job_data = {}
-                job_data = job.function(job)
+                job.function(job)
                 #update the data structure with the returned data
-                self.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
-                job.main_data.update({job.id:job_data})
-                job.cache.update({job.id:job_data})
-                self.lock.release()
+
 
         print(f" ** Completed thread - {self.number}")
 
@@ -70,12 +66,10 @@ class Thread(threading.Thread):
 
 class Job:
     #holds all the information needed for the worker threads to make a request and execute the job_function
-    #TODO remove cache from this to make it generic, create inherited class in C2Scrape to include it
-    def __init__(self, job_id, function, url, main_data, cache, session = None, lock = None):
+    def __init__(self, job_id, function, url, custom_data, session = None, lock = None):
         self.id = job_id #will be made the key in main_data, should be unique
         self.url = url
-        self.main_data = main_data #dictionary, data from job_function will be updated to here
-        self.cache = cache
+        self.custom_data = custom_data #your data structure, accessible inside your job function (list, dictionaey, list of list, list of dictionaries...)
         self.request = None
         self.function = function
         self.session = None #can set session and lock per job, or can leave unset and attributes will be taken from thread
@@ -113,10 +107,9 @@ def job_function_template(job):
     job_data = {}
     job.get_url() #get the URL
     if job.request != None: #check that a URL was recieved OK, will be None if there as a problem
+        job.lock.acquire() #update/append are thread safe but other operations elsewhere (e.g. JSON.dumps) might not be
         if job.type == "jobtype1": #do something
-            job_data = {"key1":"val1", "key2":"val2"}
+             job.data.update({"key1":"val3", "key2":"val4"})
         if job.type == "jobtype2": #do something different
-            job_data = {"key1":"val3", "key2":"val4"}
-
-    return job_data #this will be updated in job.main_data, will overwrite anything with the same ID
-    
+            job.data.update({"key1":"val3", "key2":"val4"})
+        job.lock.release()

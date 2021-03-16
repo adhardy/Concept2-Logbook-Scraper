@@ -211,33 +211,45 @@ def get_athlete(job):
     #function executed by thread, should return a dictionary that will be updated to the main data structure by the thread
     #TODO first check if it already exists in job.data
     #TODO check cache check is working
-    data = {}
+    job_data = {}
+    athletes = job.custom_data[0]
+    cache = job.custom_data[1]
 
     #check if in cache.
-    if job.id in job.cache.keys():
-        data = job.cache[job.id]#retrieve from cache
+    if job.id in cache.keys():
+        job_data = cache[job.id]#retrieve from cache
     else:
         job.get_url(job.thread) #get the URL
         if job.request != None: #check that a URL was recieved OK
-            data = get_athlete_data(r)
-            data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
+            job_data = get_athlete_data(job.request)
+            job_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
 
-    return data
+    job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
+    athletes.update({job.id:job_data}) #main data
+    cache.update({job.id:job_data}) #cache
+    job.lock.release()
 
 def get_ext_workout(job):
     #function executed by thread, should return a dictionary that will be updated to the main data structure by the thread
     #TODO first check if it already exists in job.data
 
-    data = {}
-    
+    job.data = {}
+    ext_workouts = job.custom_data[0]
+    cache = job.custom_data[1]
+
     #check if in cache.
-    if job.id in job.cache.keys():
-        data = job.cache[job.id]#retrieve from cache
+    if job.id in cache.keys():
+        job_data = cache[job.id]#retrieve from cache
     else:
         job.get_url() #get the URL
         if job.request != None: #check that a URL was recieved OK
-            data = get_ext_workout_data(r)
-            data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
-    return data
+            job_data = get_ext_workout_data(job.request)
+            job_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
+
+    job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
+    ext_workouts.update({job.id:job_data}) #main data
+    cache.update({job.id:job_data}) #cache
+    job.lock.release()
+
 
 
