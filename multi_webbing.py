@@ -76,3 +76,17 @@ class Thread(threading.Thread):
         super().join(timeout)
         print(f" ** Joined thread - {self.name}")
 
+def job_function_template(job):
+    """not used, template code for a job_function"""
+    job_data = {}
+
+    #the thread makes the URL request, you can access the request object from Job object
+    if job.request != None: #check that a URL was recieved OK, will be None if there as a problem
+        if job.type = "jobtype1" #do something
+            job_data = {"key1":"val1", "key2":"val2"}
+        if job.type = "jobtype2" #do something different
+            job_data = {"key1":"val3", "key2":"val4"}
+
+    return job_data
+
+
