@@ -105,7 +105,7 @@ for ranking_table in ranking_tables[0:num_ranking_tables]:
             #no pagination block, only one page
             pages = 1
     
-    for page in range(1):#range(1,pages+1):
+    for page in range(1,pages+1):
         #master process sub-loop over each page
         url_string = ranking_table.url_string + "&page=" + str(page)
 
