@@ -207,7 +207,7 @@ def C2_login(session, url_login, username, password):
     response = session.post(url_login, data=form)
     return response
 
-def get_profile(job, session):
+def get_profile(job):
     #function executed by thread, should return a dictionary to be updated to the main data structure
     #check if in cache.
     #Not too concerned about threads colliding here as worst case is that the thread makes an extra URL visit if the cache gets populated with this profile id in between this check and the url visit, profile will just be overwritten in dictionary with the same data
@@ -218,7 +218,7 @@ def get_profile(job, session):
     if job.id in job.cache.keys():
         data = job.cache[job.id]#retrieve from cache
     else:
-        if job.session != None:
+        if job.request != None: #check that a URL was recieved OK
             if job.type == "athlete":
                 data = get_athlete_profile(r)
                 data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())

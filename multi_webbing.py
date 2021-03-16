@@ -14,6 +14,7 @@ class Job:
 
     def get_url(self, web_thread, exception_on_error = False):
     #TODO this will currently fail silently when exception on error = False, maybe add a log?
+    #TODO error handing in general needs work here
         try:
             r = web_thread.session.get(self.url)
             if r.status_code == 200:
@@ -28,10 +29,10 @@ class Job:
                 self.request = None
             else:
                 raise ValueError(f"Could not access url: {url}")
-         
 
 class Thread(threading.Thread):
     #define how the threads function
+    #TODO add verbosity for more detailed output options
     def __init__(self, name, job_queue, lock, session, job_function):
         threading.Thread.__init__(self)
         self.name = name
@@ -43,6 +44,7 @@ class Thread(threading.Thread):
 
     def run(self):
         #execute on thread.start()
+        #job_function should take 
         print(f" ** Starting thread - {self.name}")
 
         while not self._stop_event.isSet():
@@ -59,7 +61,7 @@ class Thread(threading.Thread):
                 #execute main thread function
                 job_data = {}
                 job.get_url(self)
-                job_data = self.job_function(job, self.session)
+                job_data = self.job_function(job)
                 #update the data structure with the returned data
                 self.lock.acquire() #dict.update is thread safe but json.dumps is not, need to hold here when printing output
                 job.main_data.update({job.id:job_data})
