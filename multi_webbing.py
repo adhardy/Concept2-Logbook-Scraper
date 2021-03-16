@@ -83,23 +83,13 @@ class Job:
         if self.lock == None:
             self.lock = self.thread.lock
 
-    def get_url(self, exception_on_error = False):
-    #TODO this will currently fail silently when exception on error = False, maybe add a log?
-    #TODO error handing in general needs work here
+    def get_url(self):
+    """Make a get request to Job.url. Sets Job.request to the result, or -1 if it fails to connect to the server"""
         try:
-            r = self.thread.session.get(self.url)
-            if r.status_code == 200:
-                self.request = r
-            else:
-                if exception_on_error == False:
-                    self.request = None
-                else:
-                    raise ValueError(f"A server error occured, status code: {str(r.status_code)}, URL: {url}")
+            self.request = self.thread.session.get(self.url)               
         except requests.exceptions.ConnectionError:
-            if exception_on_error == False:
-                self.request = None
-            else:
-                raise ValueError(f"Could not access url: {url}")
+            self.request = -1
+
 
 def job_function_template(job):
     """not used, template code for a job_function"""
