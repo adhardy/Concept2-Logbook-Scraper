@@ -45,7 +45,7 @@ ext_workouts = {}
 num_threads = config["threads"]
 threads = mw.Threading(num_threads, C2Scrape.get_profile)
 
-#create session for login using session created in threads
+#use same session as threads, log in to the website
 s = threads.session
 if C2_login:
     response = C2Scrape.C2_login(s, url_login, C2_username, C2_password)

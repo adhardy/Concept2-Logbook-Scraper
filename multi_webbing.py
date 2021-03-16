@@ -2,34 +2,20 @@ import queue #multithreading
 import threading
 import requests
 
-class Job:
-    #holds all the information needed for the worker threads to request a web page and execute job_function
-    #TODO remove cache from this to make it generic, create inherited class in C2Scrape to include it
-    def __init__(self, id, job_type, url, main_data, cache):
-        self.id = id
-        self.type = job_type #allows options to do different things in job_function depending on the type of, for example, web page
-        self.url = url
-        self.main_data = main_data #a dictionary, data from job_function will be updated to here
-        self.cache = cache
-        self.request = None
+class Threading():
+    """call this class first to initiate MultiWebbing"""
+    def __init__(self, num_threads, job_function):
+        self.job_queue = queue.Queue()
+        self.lock = threading.Lock()
+        self.session = requests.session()
+        self.threads = []
+        self.job_function = job_function
+        for i in range(num_threads):
+            self.threads.append(Thread(i, self.job_queue, self.lock, self.session, self.job_function))
 
-    def get_url(self, web_thread, exception_on_error = False):
-    #TODO this will currently fail silently when exception on error = False, maybe add a log?
-    #TODO error handing in general needs work here
-        try:
-            r = web_thread.session.get(self.url)
-            if r.status_code == 200:
-                self.request = r
-            else:
-                if exception_on_error == False:
-                    self.request = None
-                else:
-                    raise ValueError(f"A server error occured, status code: {str(r.status_code)}, URL: {url}")
-        except requests.exceptions.ConnectionError:
-            if exception_on_error == False:
-                self.request = None
-            else:
-                raise ValueError(f"Could not access url: {url}")
+    def start(self):
+        for thread in self.threads:
+            thread.start()
 
 class Thread(threading.Thread):
     #define how the threads function
@@ -77,6 +63,35 @@ class Thread(threading.Thread):
         super().join(timeout)
         print(f" ** Joined thread - {self.number}")
 
+class Job:
+    #holds all the information needed for the worker threads to request a web page and execute job_function
+    #TODO remove cache from this to make it generic, create inherited class in C2Scrape to include it
+    def __init__(self, id, job_type, url, main_data, cache):
+        self.id = id
+        self.type = job_type #allows options to do different things in job_function depending on the type of, for example, web page
+        self.url = url
+        self.main_data = main_data #a dictionary, data from job_function will be updated to here
+        self.cache = cache
+        self.request = None
+
+    def get_url(self, web_thread, exception_on_error = False):
+    #TODO this will currently fail silently when exception on error = False, maybe add a log?
+    #TODO error handing in general needs work here
+        try:
+            r = web_thread.session.get(self.url)
+            if r.status_code == 200:
+                self.request = r
+            else:
+                if exception_on_error == False:
+                    self.request = None
+                else:
+                    raise ValueError(f"A server error occured, status code: {str(r.status_code)}, URL: {url}")
+        except requests.exceptions.ConnectionError:
+            if exception_on_error == False:
+                self.request = None
+            else:
+                raise ValueError(f"Could not access url: {url}")
+
 def job_function_template(job):
     """not used, template code for a job_function"""
     job_data = {}
@@ -89,18 +104,3 @@ def job_function_template(job):
             job_data = {"key1":"val3", "key2":"val4"}
 
     return job_data
-
-class Threading():
-
-    def __init__(self, num_threads, job_function):
-        self.job_queue = queue.Queue()
-        self.lock = threading.Lock()
-        self.session = requests.session()
-        self.threads = []
-        self.job_function = job_function
-        for i in range(num_threads):
-            self.threads.append(Thread(i, self.job_queue, self.lock, self.session, self.job_function))
-
-    def start(self):
-        for thread in self.threads:
-            thread.start()
