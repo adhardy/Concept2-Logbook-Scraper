@@ -44,7 +44,7 @@ workouts = {}
 ext_workouts = {}
 
 # initialize threads
-threads = mw.Threading(num_threads)
+threads = mw.MultiWebbing(num_threads)
 
 #use same session as threads, log in to the website
 s = threads.session
