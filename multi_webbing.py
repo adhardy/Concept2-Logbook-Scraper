@@ -2,7 +2,7 @@ import queue #multithreading
 import threading
 import requests
 
-class Threading():
+class MultiWebbing():
     """call this class first to initiate MultiWebbing and the individual threads"""
     def __init__(self, num_threads):
         """Creates a job queue, lock object, session and creates the number of requested threads"""
@@ -109,7 +109,7 @@ def job_function_template(job):
     if job.request != None: #check that a URL was recieved OK, will be None if there as a problem
         job.lock.acquire() #update/append are thread safe but other operations elsewhere (e.g. JSON.dumps) might not be
         if job.type == "jobtype1": #do something
-             job.data.update({"key1":"val3", "key2":"val4"})
+            job.custom_data.update({"key1":"val3", "key2":"val4"})
         if job.type == "jobtype2": #do something different
-            job.data.update({"key1":"val3", "key2":"val4"})
+            job.custom_data.update({"key1":"val3", "key2":"val4"})
         job.lock.release()

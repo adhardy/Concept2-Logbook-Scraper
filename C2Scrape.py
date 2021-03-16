@@ -251,7 +251,6 @@ def get_ext_workout(job):
             cache.update({job.id:job_data}) #cache
             job.lock.release()
 
-
     job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
     ext_workouts.update({job.id:job_data}) #main data
     job.lock.release()
