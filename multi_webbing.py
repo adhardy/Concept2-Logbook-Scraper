@@ -68,17 +68,17 @@ class Job:
     def __init__(self, job_id, function, url, custom_data, session = None, lock = None):
         self.id = job_id #will be made the key in main_data, should be unique
         self.url = url
-        self.custom_data = custom_data #your data structure, accessible inside your job function (list, dictionaey, list of list, list of dictionaries...)
+        self.custom_data = custom_data #your data structure, accessible inside your job function (list, dictionary, list of list, list of dictionaries...)
         self.request = None
         self.function = function
-        self.session = None #can set session and lock per job, or can leave unset and attributes will be taken from thread
+        self.session = None #can set session and lock per job, or can leave unset and attributes will be taken from thread set during init
         self.lock = None
 
     def set_thread(self, thread):
         """allows access to thread attributes(e.g. session, lock) that may be needed for the job function"""
         self.thread = thread
         # if not set in init, use thread session and lock 
-        if self.session == None:
+        if self.session == None:    
             self.session = self.thread.session
         if self.lock == None:
             self.lock = self.thread.lock
