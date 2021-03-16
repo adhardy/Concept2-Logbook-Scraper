@@ -218,8 +218,7 @@ def get_profile(job, session):
     if job.id in job.cache.keys():
         data = job.cache[job.id]#retrieve from cache
     else:
-        r = get_url(session, job.url)
-        if r != None:
+        if job.session != None:
             if job.type == "athlete":
                 data = get_athlete_profile(r)
                 data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
