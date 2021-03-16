@@ -1,26 +1,25 @@
 import queue #multithreading
 import threading
-import C2Scrape
 
-class Profile:
-    #holds all the information needed for the worker threads to visit this profile and scrape data
-    def __init__(self, profile_id, profile_type, url, profile_list, profile_cache, lock,session):
-        self.profile_id = profile_id
-        self.profile_type = profile_type
+class Job:
+    #holds all the information needed for the worker threads to visit a page and scrape data
+    def __init__(self, profile_id, profile_type, url, main_data, cache):
+        self.id = profile_id
+        self.type = profile_type
         self.url = url
-        self.profile_list = profile_list
-        self.profile_cache = profile_cache
-        self.data = None #json object with the profile data
-        self.lock = lock
-        self.session = session
+        self.main_data = main_data
+        self.cache = cache       
 
-class ProfileThread(threading.Thread):
+class WebThread(threading.Thread):
     #define how the threads function
-    def __init__(self, name, profile_queue):
+    def __init__(self, name, job_queue, lock, session, job_function):
         threading.Thread.__init__(self)
         self.name = name
         self._stop_event = threading.Event()
-        self.profile_queue = profile_queue
+        self.job_queue = job_queue
+        self.lock = lock
+        self.session = session
+        self.job_function = job_function
 
     def run(self):
         #execute on thread.start()
@@ -29,21 +28,27 @@ class ProfileThread(threading.Thread):
         while not self._stop_event.isSet():
             #thread will continuously check the queue for work until the master process joins the threads, and the stop_event signal is sent
             try:
-                profile = self.profile_queue.get(block=False)
+                #get a job
+                job = self.job_queue.get(block=False)
 
             except queue.Empty:
                 pass
 
             else:
                 #print("Thread " + self.name + ": Getting profile: " + profile.url)
-                C2Scrape.thread_get_profile(profile)
+                #execute main thread function
+                job_data = {}
+                job_data = self.job_function(job, self.session)
+                #update the data structure with the returned data
+                self.lock.acquire() #dict.update is thread safe but json.dumps is not, need to hold here when printing output
+                job.main_data.update({job.id:job_data})
+                job.cache.update({job.id:job_data})
+                self.lock.release()
 
         print(f" ** Completed thread - {self.name}")
 
-    
     def join(self, timeout=None):
         #send stop event to terminate the work loop before calling join
         self._stop_event.set()
         super().join(timeout)
         print(f" ** Joined thread - {self.name}")
-

@@ -207,27 +207,25 @@ def C2_login(session, url_login, username, password):
     response = session.post(url_login, data=form)
     return response
 
-#get athlete or extended workout profile
-def thread_get_profile(profile):
+def get_profile(job, session):
+    #function executed by thread, should return a dictionary to be updated to the main data structure
     #check if in cache.
     #Not too concerned about threads colliding here as worst case is that the thread makes an extra URL visit if the cache gets populated with this profile id in between this check and the url visit, profile will just be overwritten in dictionary with the same data
-    #TODO first check if it already exists in profile.data
+    #TODO first check if it already exists in job.data
     
-    if profile.profile_id in profile.profile_cache.keys():
-        profile.data = profile.profile_cache[profile.profile_id]#retrieve from cache
-    else:
-        r = get_url(profile.session, profile.url)
-        if r != None:
-            if profile.profile_type == "athlete":
-                profile.data = get_athlete_profile(r)
-                profile.data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
-            
-            #TODO breakout into function
-            if profile.profile_type == "ext_workout":
-                profile.data = get_ext_workout_profile(r)
-                profile.data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
+    data = {}
 
-    profile.lock.acquire() #dict.update is thread safe but json.dumps is not, need to hold here when printing output
-    profile.profile_list.update({profile.profile_id:profile.data})
-    profile.profile_cache.update({profile.profile_id:profile.data})
-    profile.lock.release()
+    if job.id in job.cache.keys():
+        data = job.cache[job.id]#retrieve from cache
+    else:
+        r = get_url(session, job.url)
+        if r != None:
+            if job.type == "athlete":
+                data = get_athlete_profile(r)
+                data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
+            
+            if job.type == "ext_workout":
+                data = get_ext_workout_profile(r)
+                data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
+
+    return data
