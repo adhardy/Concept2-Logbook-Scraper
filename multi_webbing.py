@@ -34,9 +34,9 @@ class Job:
 class Thread(threading.Thread):
     #define how the threads function
     #TODO add verbosity for more detailed output options
-    def __init__(self, name, job_queue, lock, session, job_function):
+    def __init__(self, number, job_queue, lock, session, job_function):
         threading.Thread.__init__(self)
-        self.name = name
+        self.number = number
         self._stop_event = threading.Event()
         self.job_queue = job_queue
         self.lock = lock
@@ -46,7 +46,7 @@ class Thread(threading.Thread):
     def run(self):
         #execute on thread.start()
         #job_function should have a Job object as its sole argument. Can update job argument with additional attributes if needed for the function
-        print(f" ** Starting thread - {self.name}")
+        print(f" ** Starting thread - {self.number}")
 
         while not self._stop_event.isSet():
             #thread will continuously check the queue for work until the master process joins the threads, and the stop_event signal is sent
@@ -69,13 +69,13 @@ class Thread(threading.Thread):
                 job.cache.update({job.id:job_data})
                 self.lock.release()
 
-        print(f" ** Completed thread - {self.name}")
+        print(f" ** Completed thread - {self.number}")
 
     def join(self, timeout=None):
         #send stop event to terminate the work loop before calling join
         self._stop_event.set()
         super().join(timeout)
-        print(f" ** Joined thread - {self.name}")
+        print(f" ** Joined thread - {self.number}")
 
 def job_function_template(job):
     """not used, template code for a job_function"""
@@ -83,11 +83,24 @@ def job_function_template(job):
 
     #the thread makes the URL request, you can access the request object from Job object
     if job.request != None: #check that a URL was recieved OK, will be None if there as a problem
-        if job.type = "jobtype1" #do something
+        if job.type == "jobtype1": #do something
             job_data = {"key1":"val1", "key2":"val2"}
-        if job.type = "jobtype2" #do something different
+        if job.type == "jobtype2": #do something different
             job_data = {"key1":"val3", "key2":"val4"}
 
     return job_data
 
+class Threading():
 
+    def __init__(self, num_threads, job_function):
+        self.job_queue = queue.Queue()
+        self.lock = threading.Lock()
+        self.session = requests.session()
+        self.threads = []
+        self.job_function = job_function
+        for i in range(num_threads):
+            self.threads.append(Thread(i, self.job_queue, self.lock, self.session, self.job_function))
+
+    def start(self):
+        for thread in self.threads:
+            thread.start()
