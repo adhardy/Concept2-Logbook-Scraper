@@ -3,12 +3,12 @@ import threading
 import requests
 
 class Job:
-    #holds all the information needed for the worker threads to visit a page and scrape data
-    def __init__(self, profile_id, profile_type, url, main_data, cache):
-        self.id = profile_id
-        self.type = profile_type
+    #holds all the information needed for the worker threads to request a web page and execute job_function
+    def __init__(self, id, job_type, url, main_data, cache):
+        self.id = id
+        self.type = job_type #allows options to do different things in job_function depending on the type of, for example, web page
         self.url = url
-        self.main_data = main_data
+        self.main_data = main_data #a dictionary, data from job_function will be updated to here
         self.cache = cache  
         self.request = None
 
@@ -44,7 +44,7 @@ class Thread(threading.Thread):
 
     def run(self):
         #execute on thread.start()
-        #job_function should take 
+        #job_function should have a Job object as its sole argument. Can update job argument with additional attributes if needed for the function
         print(f" ** Starting thread - {self.name}")
 
         while not self._stop_event.isSet():
@@ -63,7 +63,7 @@ class Thread(threading.Thread):
                 job.get_url(self)
                 job_data = self.job_function(job)
                 #update the data structure with the returned data
-                self.lock.acquire() #dict.update is thread safe but json.dumps is not, need to hold here when printing output
+                self.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
                 job.main_data.update({job.id:job_data})
                 job.cache.update({job.id:job_data})
                 self.lock.release()

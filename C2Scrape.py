@@ -208,13 +208,12 @@ def C2_login(session, url_login, username, password):
     return response
 
 def get_profile(job):
-    #function executed by thread, should return a dictionary to be updated to the main data structure
-    #check if in cache.
-    #Not too concerned about threads colliding here as worst case is that the thread makes an extra URL visit if the cache gets populated with this profile id in between this check and the url visit, profile will just be overwritten in dictionary with the same data
+    #function executed by thread, should return a dictionary that will be updated to the main data structure by the thread
     #TODO first check if it already exists in job.data
     
     data = {}
 
+    #check if in cache.
     if job.id in job.cache.keys():
         data = job.cache[job.id]#retrieve from cache
     else:
