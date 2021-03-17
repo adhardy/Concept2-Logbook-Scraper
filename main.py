@@ -1,5 +1,5 @@
 import C2Scrape
-import multi_webbing as mw
+from multi_webbing import multi_webbing as mw
 import string
 import json
 from lxml import etree, html #reading html 
