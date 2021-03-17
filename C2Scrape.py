@@ -249,14 +249,14 @@ def get_ext_workout(job):
         if job.id in cache.keys():
             job_data = cache[job.id]#retrieve from cache
         else:
-        get_url_success = job.get_url() #get the URL
-        if get_url_success:
-            if job.request.status_code == 200: #check that the URL was recieved OK
-                    job_data = get_ext_workout_data(job.request)
-                    job_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
-                    job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
-                    cache.update({job.id:job_data}) #cache
-                    job.lock.release()
+            get_url_success = job.get_url() #get the URL
+            if get_url_success:
+                if job.request.status_code == 200: #check that the URL was recieved OK
+                        job_data = get_ext_workout_data(job.request)
+                        job_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
+                        job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
+                        cache.update({job.id:job_data}) #cache
+                        job.lock.release()
                 else:
                     print(f"There was a problem with {job.url}, status code: {job.request.status_code}")
 
