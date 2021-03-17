@@ -3,10 +3,11 @@ cache_backups
 output*
 C2Athletes*.json
 C2Extended*.json
-C2Rankings*.json
+C2Workouts*.json
 .vscode
 __pycache__
 .ipynb_checkpoints
 output_multi
 *_backup
 html_samples
+backup
