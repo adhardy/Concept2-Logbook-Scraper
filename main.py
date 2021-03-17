@@ -151,11 +151,11 @@ for ranking_table in ranking_tables[0:num_ranking_tables]:
                         
                         if get_profile_data and profile_ID != None:
                             #add athlete profile object to thread queue
-                            threads.job_queue.put(mw.Job(profile_ID, C2Scrape.get_athlete, url_profile_base + profile_ID, [athletes, athletes_cache]))
+                            threads.job_queue.put(mw.Job(C2Scrape.get_athlete, url_profile_base + profile_ID, [athletes, athletes_cache, profile_ID]))
                             queue_added += 1
 
                         if get_extended_workout_data:
-                            threads.job_queue.put(mw.Job(workout_ID, C2Scrape.get_ext_workout, workout_info_link, [ext_workouts, ext_workouts_cache]))
+                            threads.job_queue.put(mw.Job(C2Scrape.get_ext_workout, workout_info_link, [ext_workouts, ext_workouts_cache, workout_ID]))
                             queue_added += 1
 
         #after each page, check to see if we should write to file

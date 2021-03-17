@@ -214,12 +214,13 @@ def get_athlete(job):
     job_data = {}
     athletes = job.custom_data[0]
     cache = job.custom_data[1]
+    profile_id = job.custom_data[2]
 
     #check if already in data dictionary, if so, do nothing
-    if job.id not in athletes.keys():
+    if profile_id not in athletes.keys():
         #check if in cache.
-        if job.id in cache.keys():
-            job_data = cache[job.id]#retrieve from cache
+        if profile_id in cache.keys():
+            job_data = cache[profile_id]#retrieve from cache
         else:
             get_url_success = job.get_url() #get the URL
             if get_url_success:
@@ -227,13 +228,13 @@ def get_athlete(job):
                     job_data = get_athlete_data(job.request)
                     job_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
                     job.lock.acquire()
-                    cache.update({job.id:job_data}) #cache
+                    cache.update({profile_id:job_data}) #cache
                     job.lock.release()
                 else:
                     print(f"There was a problem with {job.url}, status code: {job.request.status_code}")
 
         job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
-        athletes.update({job.id:job_data}) #main data
+        athletes.update({profile_id:job_data}) #main data
         job.lock.release()
 
 def get_ext_workout(job):
@@ -242,12 +243,13 @@ def get_ext_workout(job):
     job.data = {}
     ext_workouts = job.custom_data[0]
     cache = job.custom_data[1]
+    workout_id = job.custom_data[2]
 
     #check if already in data dictionary, if so, do nothing
-    if job.id not in ext_workouts.keys():
+    if workout_id not in ext_workouts.keys():
         #check if in cache.
-        if job.id in cache.keys():
-            job_data = cache[job.id]#retrieve from cache
+        if workout_id in cache.keys():
+            job_data = cache[workout_id]#retrieve from cache
         else:
             get_url_success = job.get_url() #get the URL
             if get_url_success:
@@ -255,11 +257,11 @@ def get_ext_workout(job):
                         job_data = get_ext_workout_data(job.request)
                         job_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
                         job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
-                        cache.update({job.id:job_data}) #cache
+                        cache.update({workout_id:job_data}) #cache
                         job.lock.release()
                 else:
                     print(f"There was a problem with {job.url}, status code: {job.request.status_code}")
 
         job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
-        ext_workouts.update({job.id:job_data}) #main data
+        ext_workouts.update({workout_id:job_data}) #main data
         job.lock.release()
