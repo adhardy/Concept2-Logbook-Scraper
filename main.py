@@ -13,13 +13,7 @@ import requests
 #TODO: os.path.join(),aws rds
 
 config = {}
-try:
-    fo = open("C2config.json")
-    config = json.load(fo)
-    fo.close
-except:
-    print("Could not open config file. Quitting")
-    quit()
+config = C2Scrape.load_config("C2config.json")
 
 #load config into easy to use vars
 url_login_success = "https://log.concept2.com/log"
@@ -49,13 +43,7 @@ threads = mw.MultiWebbing(num_threads)
 #use same session as threads, log in to the website
 s = threads.session
 if C2_login:
-    response = C2Scrape.C2_login(s, url_login, C2_username, C2_password)
-    if response.url != url_login_success:
-        sys.exit("Unable to login to the logbook, quitting.")
-    else:
-        print("Login")
-else:
-    print("Loggin set to false, not loggin in.")
+    C2Scrape.C2_login(s, url_login, C2_username, C2_password, url_login_success)
 
 # start threads
 threads.start()

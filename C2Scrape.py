@@ -197,7 +197,7 @@ def backup_file(path):
 def check_write_buffer(timestamp_last_write, write_buffer):
     return datetime.now().timestamp() > timestamp_last_write + write_buffer
 
-def C2_login(session, url_login, username, password):
+def C2_login(session, url_login, username, password, url_login_success):
     login = session.get(url_login)
     login_tree = html.fromstring(login.text)
     hidden_inputs = login_tree.xpath(r'//form//input[@type="hidden"]')
@@ -205,6 +205,12 @@ def C2_login(session, url_login, username, password):
     form['username'] = username
     form['password'] = password
     response = session.post(url_login, data=form)
+    if response.url != url_login_success:
+        sys.exit("Unable to login to the logbook, quitting.")
+    else:
+        print("Login")
+    return session
+    
     return response
 
 def get_athlete(job):
@@ -240,7 +246,7 @@ def get_athlete(job):
 def get_ext_workout(job):
     #function executed by thread, updates cache and data dictionary
 
-    job.data = {}
+    job_data = {}
     ext_workouts = job.custom_data[0]
     cache = job.custom_data[1]
     workout_id = job.custom_data[2]
@@ -265,3 +271,14 @@ def get_ext_workout(job):
         job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
         ext_workouts.update({workout_id:job_data}) #main data
         job.lock.release()
+
+def load_config(path):
+    try:
+        fo = open("C2config.json")
+        return json.load(fo)
+        fo.close
+    except:
+        print("Could not open config file. Quitting")
+        quit()
+
+    
