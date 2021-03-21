@@ -24,6 +24,8 @@ url_profile_base = config["url_profile_base"]
 data = C2Scrape.Data(config)
 if config["use_cache"] == True:
     cache = C2Scrape.Cache(config)
+else:
+    cache=None
 
 # initialize threads
 threads = mw.MultiWebbing(config["threads"])
@@ -52,7 +54,7 @@ queue_added = 0 #counts the total number of objects added to the queue
 queue_added = 0
 for ranking_table in ranking_tables[0:num_ranking_tables]: 
     ranking_table_count += 1
-    ranking_table.scrape(ranking_table_count, threads, queue_added, num_ranking_tables)
+    ranking_table.scrape(ranking_table_count, threads, queue_added, num_ranking_tables, data, cache)
 
 print("Finished scraping ranking tables, waiting for profile threads to finish...")
 

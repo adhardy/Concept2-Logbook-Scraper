@@ -17,17 +17,6 @@ class Data():
         self.files = DataFiles(config)
         self.files.set_data(self)
 
-class Cache():
-
-    def __init__(self, config):
-        try:
-            self.athletes = load_cache(config["athletes_cache_file"])
-            self.ext_workouts = load_cache(config["extended_cache_file"])
-        except:
-            print("Couldn't load cache files.")
-            self.athletes = {}
-            self.ext_workouts = {} 
-        self.files = CacheFiles(config)
 
 class DataFiles():
     
@@ -85,6 +74,18 @@ class DataFiles():
                 fl = open("log","a+")
                 fl.write("Init failed: " + path)
 
+class Cache():
+
+    def __init__(self, config):
+        #try:
+        self.files = CacheFiles(config)
+        self.athletes = self.files.load(config["athletes_cache_file"])
+        self.ext_workouts = self.files.load(config["extended_cache_file"])
+        # except :
+        #     print("Couldn't load cache files:" )
+        #     self.athletes = {}
+        #     self.ext_workouts = {} 
+        
 class CacheFiles():
     
     def __init__(self, config):
@@ -95,6 +96,10 @@ class CacheFiles():
         self.write_buffer = config["write_buffer"] #write every X ranking pages
         #backup previous output
         self.backup_files()
+
+    def load(self):
+        for path in self.list:
+           fo =  
 
     def write(self, cache, lock=None):
         if check_write_buffer(timestamp_last_write, write_buffer) and config["use_cache"]:
@@ -147,7 +152,7 @@ class RankingPage():
                 url_string = url_string + key + "=" + val + "&"
         return url_string.strip("&")
 
-    def scrape(self, ranking_table_count, threads, queue_added, num_ranking_tables, data):
+    def scrape(self, ranking_table_count, threads, queue_added, num_ranking_tables, data, cache=None):
         r = get_url(threads.session, self.url_string)
         
         if r != None:
