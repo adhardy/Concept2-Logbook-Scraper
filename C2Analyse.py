@@ -7,11 +7,12 @@ class df():
     def __init__(self):
         self.event_map = {"1":"1 minute", "4":"4 minute", "30":"30 minute", "60":"60 minute"}
 
-    def load_from_file(path):
+    def load_from_file(path, index_name="id"):
         try:
             fa = open(path, "r")
             df = pd.DataFrame.from_dict(json.load(fa)).T
-            df.replace({"":np.nan, "None":np.nan, "None":None}, inplace=True) #all missing values to nan
+            df.index.set_names(index_name, inplace=True)
+            df.replace({"":np.nan, "None":np.nan, None:np.nan}, inplace=True) #all missing values to nan
         except:
             print("Could not load workouts data file.")
             df = None
