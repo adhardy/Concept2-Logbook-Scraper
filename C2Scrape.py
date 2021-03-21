@@ -5,6 +5,125 @@ from datetime import datetime, date
 from time import strftime,gmtime
 import os
 import shutil
+from lxml import etree, html #reading html 
+
+class Data():
+
+    def __init__(self, config):
+        self.athletes = {}
+        self.workouts = {}
+        self.ext_workouts = {}
+        self.list = [self.athletes, self.workouts, self.ext_workouts]
+        self.files = DataFiles(config)
+        self.files.set_data(self)
+
+class Cache():
+
+    def __init__(self, config):
+        try:
+            self.athletes = load_cache(config["athletes_cache_file"])
+            self.ext_workouts = load_cache(config["extended_cache_file"])
+        except:
+            print("Couldn't load cache files.")
+            self.athletes = {}
+            self.ext_workouts = {} 
+        self.files = CacheFiles(config)
+
+class DataFiles():
+    
+    def __init__(self, config):
+        self.workouts = config["workouts_file"]
+        self.athletes = config["athletes_file"]
+        self.extended = config["extended_file"]
+        self.list = [self.workouts, self.athletes, self.extended]
+        self.timestamp_last_write = 0
+        self.write_buffer = config["write_buffer"] #write every X ranking pages
+        #backup previous output
+        self.backup_files()
+        self.init_files()
+
+    def set_data(self, data):
+        self.data = data
+
+    def write(self, data, lock=None):
+        if check_write_buffer(timestamp_last_write, write_buffer):
+            if lock != None:
+                lock.acquire()
+
+            for out_file, data in zip(self.list, data.list):
+                try:
+                    fw = open(out_file, "w")
+                    output_data = json.dumps(data, ensure_ascii = False)
+                    fw.write(output_data)
+                    fw.close
+                    print("Write complete: " + out_file)
+                except:
+                    print("Write failed: " + out_file)
+                    fl = open("log","a+")
+                    fl.write("Write failed: " + out_file)
+
+            if lock != None:
+                lock.release()
+
+            self.timestamp_last_write = datetime.now().timestamp()
+
+    def backup_files(self):
+        for path in self.list:
+            if os.path.isfile(path):
+                try:
+                    shutil.copyfile(path, path + "_backup")
+                except:
+                    print("Could not back up: " + path)
+
+    def init_files(self):
+        for path in self.list:
+            try:
+                fw = open(path, "w+")
+                fw.close
+            except:
+                print("Init failed: " + path)
+                fl = open("log","a+")
+                fl.write("Init failed: " + path)
+
+class CacheFiles():
+    
+    def __init__(self, config):
+        self.athletes = config["athletes_cache_file"]
+        self.extended = config["extended_cache_file"]
+        self.list = [self.athletes, self.extended]
+        self.timestamp_last_write = 0
+        self.write_buffer = config["write_buffer"] #write every X ranking pages
+        #backup previous output
+        self.backup_files()
+
+    def write(self, cache, lock=None):
+        if check_write_buffer(timestamp_last_write, write_buffer) and config["use_cache"]:
+            if lock != None:
+                lock.acquire()
+
+            for out_file, data in zip(self.list, data.list):
+                try:
+                    fw = open(out_file, "a+")
+                    output_data = json.dumps(data, ensure_ascii = False)
+                    fw.write(output_data)
+                    fw.close
+                    print("Write complete: " + out_file)
+                except:
+                    print("Write failed: " + out_file)
+                    fl = open("log","a+")
+                    fl.write("Write failed: " + out_file)
+
+            self.timestamp_last_write = datetime.now().timestamp()
+            if lock != None:
+                lock.release()
+
+    def backup_files(self):
+        for path in self.list:
+            if os.path.isfile(path):
+                try:
+                    shutil.copyfile(path, path + "_backup")
+                except:
+                    print("Could not back up: " + path)
 
 class RankingPage():
     """Object to store url and associated workout variables"""
@@ -27,6 +146,82 @@ class RankingPage():
             if (val != None and val != "") and (key != None and key != ""):
                 url_string = url_string + key + "=" + val + "&"
         return url_string.strip("&")
+
+    def scrape(self, ranking_table_count, threads, queue_added, num_ranking_tables, data):
+        r = get_url(threads.session, self.url_string)
+        
+        if r != None:
+            tree = html.fromstring(r.text)
+            pagination_block = tree.xpath('//div[@class="pagination-block"]')
+            if pagination_block != []:
+                page_a_tag = pagination_block[0].xpath('ul/li/a')
+                #find the second to last one
+                pages = int(page_a_tag[-2].text)
+            else:
+                #no pagination block, only one page
+                pages = 1
+
+            for page in range(1,pages+1):
+                #master process sub-loop over each page
+                url_string = self.url_string + "&page=" + str(page)
+
+                print(get_str_ranking_table_progress(threads.job_queue.qsize(), queue_added, self, num_ranking_tables, page,pages) + "Getting ranking page: " + url_string)
+                if page > 1:
+                    #don't get the first page again (if page is ommitted, page 1 is loaded)
+                    workouts_page=[]
+                    r = get_url(s, url_string)
+                #master process checks each row, adds URLs to queue for threads to visit
+                if r != None:
+                    tree = html.fromstring(r.text)
+                    table_tree = tree.xpath('//html/body/div[2]/div/main/section[@class="content"]/table')
+                    
+                    #get column headings for this page
+                    if table_tree != []:
+                        columns = table_tree[0].xpath('thead/tr/th')
+                        column_headings = [column.text for column in columns]
+
+                        for headings in column_headings:
+                            row_dict = {}
+
+                        rows_tree = table_tree[0].xpath('tbody/tr')
+                        num_rows = len(rows_tree)
+
+                        for row in range(0,num_rows):
+                            row_tree = rows_tree[row]
+                            if row_tree != []:
+                                #get profile ID and workout ID
+                                workout_info_link = row_tree.xpath('td/a')[0].attrib["href"]
+                                profile_ID = None
+                                workout_ID = None
+
+                                #get profile and workout IDs from workout link
+                                if workout_info_link.split("/")[-2] == "individual" or workout_info_link.split("/")[-2] == "race":
+                                    profile_ID = workout_info_link.split("/")[-1]
+                                    workout_ID = workout_info_link.split("/")[-3]
+                                else:
+                                    workout_ID = workout_info_link.split("/")[-2]
+
+                                #get workout data from row
+                                data.workouts[workout_ID] = get_workout_data(row_tree, column_headings, self, profile_ID)
+                                
+                                if get_profile_data and profile_ID != None:
+                                    #add athlete profile object to thread queue
+                                    threads.job_queue.put(mw.Job(get_athlete, url_profile_base + profile_ID, [athletes, athletes_cache, profile_ID]))
+                                    queue_added += 1
+
+                                if get_extended_workout_data:
+                                    threads.job_queue.put(mw.Job(Cget_ext_workout, workout_info_link, [ext_workouts, ext_workouts_cache, workout_ID]))
+                                    queue_added += 1
+
+                #after each page, check to see if we should write to file
+                if check_write_buffer(timestamp_last_write, write_buffer):
+                    threads.lock.acquire()
+                    write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
+                    if config["use_cache"]:
+                        write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
+                    timestamp_last_write = datetime.now().timestamp()
+                    threads.lock.release()
+
 
 def get_url(session, url, exception_on_error = False):
     try:
@@ -156,43 +351,12 @@ def get_ext_workout_data(r):
 
     return profile
     
-def write_data(out_files, datas):
-    for out_file, data in zip(out_files, datas):
-        try:
-            fw = open(out_file, "w")
-            output_data = json.dumps(data, ensure_ascii = False)
-            fw.write(output_data)
-            fw.close
-            print("Write complete: " + out_file)
-        except:
-            print("Write failed: " + out_file + ". Press any key to continue")
-            fl = open("log","a")
-            fl.write("Write failed: " + out_file)
-    return
+
 
 def get_str_ranking_table_progress(queue_size, queue_added, ranking_url_count, num_ranking_urls, page,pages):
     return f"Queue size: {str(queue_size)}/{str(queue_added)} | Ranking Table: {str(ranking_url_count)}/{str(num_ranking_urls)} | Page: {str(page)}/{str(pages)} |"
 
-def load_cache(cache_file):
-    #cache path on file system, and python dictionary where the cache will be loaded to
-    cache = []
-    try:
-        fo = open(cache_file)
-        cache = json.load(fo)
-        fo.close
-        print(f"Loaded cache file: {cache_file}")
-    except:
-        print(f"Couldn't load the cache file: {cache_file}")
-        cache = {}
-    finally:
-        return cache
 
-def backup_file(path):
-    if os.path.isfile(path):
-        try:
-            shutil.copyfile(path, path + "_backup")
-        except:
-            print("Could not back up: " + path)
 
 def check_write_buffer(timestamp_last_write, write_buffer):
     return datetime.now().timestamp() > timestamp_last_write + write_buffer
