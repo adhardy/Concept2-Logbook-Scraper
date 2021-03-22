@@ -12,15 +12,15 @@ class df():
         self.df_workouts = None
 
     def load_JSONs(self):
-        self.df_athletes = self.df_from_file("output/C2Athletes.json")
-        self.df_extended = self.df_from_file("output/C2Extended.json")
-        self.df_workouts = self.df_from_file("output/C2Workouts.json")
+        self.df_athletes = self.df_from_file("output/C2Athletes.json", "profile_id")
+        self.df_extended = self.df_from_file("output/C2Extended.json", "workout_id")
+        self.df_workouts = self.df_from_file("output/C2Workouts.json", "workout_id")
         self.set_list()
 
     def load_csvs(self):
-        self.df_athletes = pd.from_csv("output/C2Athletes.json", "profile_id")
-        self.df_extended = pd.from_csv("output/C2Extended.json","workout_id")
-        self.df_workouts = pd.from_csv("output/C2Workouts.json","workout_id")
+        self.df_athletes = pd.read_csv("analysis/athletes.csv",sep=",")
+        self.df_extended = pd.read_csv("analysis/extended.csv",sep=",")
+        self.df_workouts = pd.read_csv("analysis/workouts.csv",sep=",")
         self.set_list()
 
     def set_list(self):
@@ -70,20 +70,24 @@ class df():
 
 class Clean():
 
-    def __init__(self, load_JSON = 1, load_csv = 0):
+    def __init__(self, load_JSON = 1, load_csv = 0, verbose = 0):
         self.df = df()
 
         if load_JSON == 1:
+            if verbose == 1:
+                print("Loading JSON.")
             self.df.load_JSONs()
             self.df.write_csv(self.df.list, ["analysis/athletes.csv", "analysis/extended.csv", "analysis/workouts.csv"])
-
+            if verbose == 1:
+                print("Loaded.")
+                
         if load_csv == 1:
-            self.df.load_csvs_JSONs()
+            self.df.load_csvs()
 
         self.df.print_lengths()
 
 if __name__ == "__main__":
 
-    clean = Clean()
+    clean = Clean(verbose = 1, load_csv = 1, load_JSON = 0)
 
 
