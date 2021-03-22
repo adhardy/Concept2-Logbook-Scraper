@@ -58,7 +58,8 @@ class Scraper():
         #main loop for master process over each ranking table
         for ranking_page in self.ranking_pages[0:self.num_ranking_pages]: 
             self.ranking_page_count += 1
-            ranking_page.scrape(self.ranking_page_count, self.queue_added, self.num_ranking_pages)
+            self.queue_added = ranking_page.scrape(self.ranking_page_count, self.queue_added, self.num_ranking_pages)
+
 
         print("Finished scraping ranking tables, waiting for profile threads to finish...")
 
@@ -130,7 +131,7 @@ class RankingPage():
                 #master process sub-loop over each page
                 url_string = self.url_string + "&page=" + str(page)
 
-                print(get_str_ranking_table_progress(self.threads.job_queue.qsize(), queue_added, ranking_table_count, num_ranking_tables, page,pages) + "Getting ranking page: " + url_string)
+                print(f"{get_str_ranking_table_progress(self.threads.job_queue.qsize(), queue_added, ranking_table_count, num_ranking_tables, page,pages)} | Getting ranking page: {url_string}")#, end="\r")
                 if page > 1:
                     #don't get the first page again (if page is ommitted, page 1 is loaded)
                     workouts_page=[]
@@ -182,6 +183,7 @@ class RankingPage():
                 self.data.files.write(lock=self.threads.lock)
                 if self.cache != None:
                     self.cache.files.write(lock=self.threads.lock)
+        return queue_added
 
 class Data():
 
@@ -445,7 +447,7 @@ def get_ext_workout_data(r):
 
 
 def get_str_ranking_table_progress(queue_size, queue_added, ranking_url_count, num_ranking_urls, page,pages):
-    return f"Queue size: {str(queue_size)}/{str(queue_added)} | Ranking Table: {str(ranking_url_count)}/{str(num_ranking_urls)} | Page: {str(page)}/{str(pages)} | "
+    return f"Queue size: {str(queue_size)}/{str(queue_added)} | Ranking Table: {str(ranking_url_count)}/{str(num_ranking_urls)} | Page: {str(page)}/{str(pages)}"
 
 def check_write_buffer(timestamp_last_write, write_buffer):
     return datetime.now().timestamp() > timestamp_last_write + write_buffer
