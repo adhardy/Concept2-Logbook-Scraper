@@ -1,30 +1,32 @@
+#%%
 import json
 import pandas as pd
 import numpy as np
 import traceback
+from datetime import datetime
 
 class df():
 
     def __init__(self):
         #self.event_map = {"1":"1 minute", "4":"4 minute", "30":"30 minute", "60":"60 minute"}
-        self.df_athletes = None
-        self.df_extended = None
-        self.df_workouts = None
+        self.athletes = None
+        self.extended = None
+        self.workouts = None
 
     def load_JSONs(self):
-        self.df_athletes = self.df_from_file("output/C2Athletes.json", "profile_id")
-        self.df_extended = self.df_from_file("output/C2Extended.json", "workout_id")
-        self.df_workouts = self.df_from_file("output/C2Workouts.json", "workout_id")
+        self.athletes = self.df_from_file("output/C2Athletes.json", "profile_id")
+        self.extended = self.df_from_file("output/C2Extended.json", "workout_id")
+        self.workouts = self.df_from_file("output/C2Workouts.json", "workout_id")
         self.set_list()
 
     def load_csvs(self):
-        self.df_athletes = pd.read_csv("analysis/athletes.csv",sep=",")
-        self.df_extended = pd.read_csv("analysis/extended.csv",sep=",")
-        self.df_workouts = pd.read_csv("analysis/workouts.csv",sep=",")
+        self.dathletes = pd.read_csv("analysis/athletes.csv",sep=",")
+        self.extended = pd.read_csv("analysis/extended.csv",sep=",")
+        self.workouts = pd.read_csv("analysis/workouts.csv",sep=",")
         self.set_list()
 
     def set_list(self):
-        self.list = [self.df_athletes, self.df_extended, self.df_workouts]
+        self.list = [self.athletes, self.extended, self.workouts]
 
     def df_from_file(self, path, index_name="id"):
         try:
@@ -44,19 +46,19 @@ class df():
             # except:
                 # print(f"Could not write csv file: {path}")
 
-    def merge(self, how="inner"):
-        return pd.merge(
+    def merge_frames(self, how="inner"):
+        self.merge = pd.merge(
                     left=(
                         pd.merge(
-                            left=self.df_workouts, 
-                            right=self.df_athletes, 
+                            left=self.workouts, 
+                            right=self.athletes, 
                             left_on='profile_id', 
                             right_on="profile_id", 
                             right_index=True, 
                             how=how
                             )
                         ), 
-                    right = self.df_extended, 
+                    right = self.extended, 
                     left_on='workout_id', 
                     right_on="workout_id", 
                     right_index=True, 
@@ -64,30 +66,42 @@ class df():
                     )
 
     def print_lengths(self):
-        print(f"Number of workouts: {len(self.df_workouts)}")
-        print(f"Number of athletes: {len(self.df_athletes)}")
-        print(f"Number of extended workout data: {len(self.df_extended)}")
+        print(f"Number of workouts: {len(self.workouts)}")
+        print(f"Number of athletes: {len(self.athletes)}")
+        print(f"Number of extended workout data: {len(self.extended)}")
+        print(f"Number of merged data: {len(self.merge)}")
 
 class Clean():
 
-    def __init__(self, load_JSON = 1, load_csv = 0, verbose = 0):
+    def __init__(self, verbose = 0):
         self.df = df()
+        self.verbose = verbose
 
-        if load_JSON == 1:
-            if verbose == 1:
-                print("Loading JSON.")
-            self.df.load_JSONs()
-            self.df.write_csv(self.df.list, ["analysis/athletes.csv", "analysis/extended.csv", "analysis/workouts.csv"])
-            if verbose == 1:
-                print("Loaded.")
-                
-        if load_csv == 1:
-            self.df.load_csvs()
+    def load_JSON(self):
+        if self.verbose == 1:
+            print("Loading JSON.")
+        self.df.load_JSONs()
+        self.df.write_csv(self.df.list, ["analysis/athletes.csv", "analysis/extended.csv", "analysis/workouts.csv"])
+        if self.verbose == 1:
+            print("Loaded.")
 
-        self.df.print_lengths()
+    def load_csv():
+        self.df.load_csvs()
 
-if __name__ == "__main__":
-
-    clean = Clean(verbose = 1, load_csv = 1, load_JSON = 0)
-
-
+def convert_to_datetime(date_str):
+    dtFormats = ('%B %d, %Y','%B %d, %Y %H:%M:%S','%d-%m-%Y %H:%M:%S')
+    date_value = None
+    if isinstance(date_str, datetime):
+        #return if already a datetime
+        return date_str
+    if isinstance(date_str, str): 
+        date_str = date_str.strip()
+        for dtFormat in dtFormats:
+            try:
+                date_value = datetime.strptime(date_str, dtFormat)
+            except ValueError:
+                pass
+            else:
+                return date_value
+        if date_value == None:
+            raise ValueError(f"No mathing datetime format found for '{date_str}'")
