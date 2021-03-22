@@ -10,6 +10,7 @@ C2Workouts*.json
 backup
 html_samples
 cache
+analysis
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
