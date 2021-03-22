@@ -1,5 +1,5 @@
 {
-    "max_ranking_tables":1,
+    "max_ranking_tables":"",
     "use_cache":true,
     "threads":10,
     "workouts_file":"output/C2Workouts.json",
