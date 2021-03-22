@@ -13,7 +13,7 @@ The default configuration options should be suitable for most systems. See [Conf
 
 If using the default configuration, you will need to create an "output" and a "cache" folder in the project root directory.
 
-To run the scraper, run main.py using python.
+To run the scraper, run C2Scrape.py using python.
 
 ### Multi-Threading
 The scraper uses multi-threading, provided by the threading module, to speed up the scraping process. The scraper is rate limited by the speed at which it recieved its URL requests.

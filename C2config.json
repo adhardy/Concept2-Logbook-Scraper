@@ -1,7 +1,7 @@
 {
     "max_ranking_tables":"",
     "use_cache":true,
-    "threads":1,
+    "threads":10,
     "workouts_file":"output/C2Workouts.json",
     "athletes_file":"output/C2Athletes.json",
     "extended_file":"output/C2Extended.json",
