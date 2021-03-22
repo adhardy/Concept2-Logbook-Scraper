@@ -76,6 +76,8 @@ class Clean():
     def __init__(self, verbose = 0):
         self.df = df()
         self.verbose = verbose
+        self.ft_to_cm = 30.48
+        self.in_to_cm = 2.54
 
     def load_JSON(self):
         if self.verbose == 1:
