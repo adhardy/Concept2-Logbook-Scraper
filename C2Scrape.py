@@ -6,141 +6,76 @@ from time import strftime,gmtime
 import os
 import shutil
 from lxml import etree, html #reading html 
+from multi_webbing import multi_webbing as mw
+import time #sleep
+#TODO: os.path.join(),aws rds
 
-class Data():
+class Scraper():
 
-    def __init__(self, config):
-        self.athletes = {}
-        self.workouts = {}
-        self.ext_workouts = {}
-        self.list = [self.athletes, self.workouts, self.ext_workouts]
-        self.files = DataFiles(config)
-        self.files.set_data(self)
+    def __init__(self, config_path):
+        self.config = load_config(config_path)
+        #initialise data structures and output files
+        self.data = Data(self.config)
+        if self.config["use_cache"] == True:
+            self.cache = Cache(self.config)
+        else:
+            cache=None
 
+        # initialize threads
+        self.threads = mw.MultiWebbing(self.config["threads"])
 
-class DataFiles():
-    
-    def __init__(self, config):
-        self.workouts = config["workouts_file"]
-        self.athletes = config["athletes_file"]
-        self.extended = config["extended_file"]
-        self.list = [self.workouts, self.athletes, self.extended]
-        self.timestamp_last_write = 0
-        self.write_buffer = config["write_buffer"] #write every X ranking pages
-        #backup previous output
-        self.backup_files()
-        self.init_files()
+        #use same session as threads, log in to the website
+        self.s = self.threads.session
+        if self.config["C2_login"]:
+            #TODO move loading of username password to environment vars rather than config file
+            C2_login(self.s, self.config["url_login"], self.config["C2_username"], self.config["C2_password"], "https://log.concept2.com/log")
 
-    def set_data(self, data):
-        self.data = data
+        # start threads
+        self.threads.start()
 
-    def write(self, data, lock=None):
-        if check_write_buffer(timestamp_last_write, write_buffer):
-            if lock != None:
-                lock.acquire()
+        #generate urls to visit
+        self.ranking_pages = generate_ranking_pages(self.config, self.threads, self.data, self.cache)
+        self.num_ranking_pages = len(self.ranking_pages)
 
-            for out_file, data in zip(self.list, data.list):
-                try:
-                    fw = open(out_file, "w")
-                    output_data = json.dumps(data, ensure_ascii = False)
-                    fw.write(output_data)
-                    fw.close
-                    print("Write complete: " + out_file)
-                except:
-                    print("Write failed: " + out_file)
-                    fl = open("log","a+")
-                    fl.write("Write failed: " + out_file)
+        #check for override of maximum ranking tables
+        if self.config["max_ranking_tables"] != "":
+             self.num_ranking_pages = int(self.config["max_ranking_tables"])
 
-            if lock != None:
-                lock.release()
+        self.ranking_page_count = 0 #counts the number of ranking table objects processed
+        self.queue_added = 0 #counts the total number of objects added to the queue
 
-            self.timestamp_last_write = datetime.now().timestamp()
+    def scrape(self):
 
-    def backup_files(self):
-        for path in self.list:
-            if os.path.isfile(path):
-                try:
-                    shutil.copyfile(path, path + "_backup")
-                except:
-                    print("Could not back up: " + path)
+        #main loop for master process over each ranking table
+        for ranking_page in self.ranking_pages[0:self.num_ranking_pages]: 
+            self.ranking_page_count += 1
+            ranking_page.scrape(self.ranking_page_count, self.queue_added, self.num_ranking_pages)
 
-    def init_files(self):
-        for path in self.list:
-            try:
-                fw = open(path, "w+")
-                fw.close
-            except:
-                print("Init failed: " + path)
-                fl = open("log","a+")
-                fl.write("Init failed: " + path)
+        print("Finished scraping ranking tables, waiting for profile threads to finish...")
 
-class Cache():
+        # wait for queue to be empty, then join the threads
+        while not self.threads.job_queue.empty():
+            time.sleep(1)
+            print(f"Queue size: {str(self.threads.job_queue.qsize())}/{self.queue_added}")
+            self.data.files.write()
+            if self.cache != None:
+                self.cache.files.write()
 
-    def __init__(self, config):
-        try:
-            self.files = CacheFiles(config)
-            self.athletes = self.files.load(config["athletes_cache_file"])
-            self.ext_workouts = self.files.load(config["extended_cache_file"])
-        except :
-            print("Couldn't load cache files:" )
-            self.athletes = {}
-            self.ext_workouts = {} 
-        
-class CacheFiles():
-    
-    def __init__(self, config):
-        self.athletes = config["athletes_cache_file"]
-        self.extended = config["extended_cache_file"]
-        self.list = [self.athletes, self.extended]
-        self.timestamp_last_write = 0
-        self.write_buffer = config["write_buffer"] #write every X ranking pages
-        #backup previous output
-        self.backup_files()
+        #write before thread join to minimise any date loss from failure
+        self.data.files.write(lock=self.threads.lock, force=True)
+        if self.cache != None:
+            self.cache.files.write(lock=self.threads.lock, force=True)
 
-    def load(self, path):
-        cache = {}
-        try:
-            fo = open(path)
-            cache = json.load(fo)
-            fo.close
-            print(f"Loaded cache file: {path}")
-        except:
-            print(f"Couldn't load the cache file: {path}")
-            cache = {}
-        finally:
-            return cache 
+        if self.threads.job_queue.empty():
+            #join threads
+            self.threads.finish()
 
-    def write(self, cache, lock=None):
-        if check_write_buffer(timestamp_last_write, write_buffer) and config["use_cache"]:
-            if lock != None:
-                lock.acquire()
+        #final write
+        self.data.files.write(force=True)
+        if self.cache != None:
+            self.cache.files.write(force=True)
 
-            for out_file, data in zip(self.list, data.list):
-                try:
-                    fw = open(out_file, "a+")
-                    output_data = json.dumps(data, ensure_ascii = False)
-                    fw.write(output_data)
-                    fw.close
-                    print("Write complete: " + out_file)
-                except:
-                    print("Write failed: " + out_file)
-                    fl = open("log","a+")
-                    fl.write("Write failed: " + out_file)
-
-            self.timestamp_last_write = datetime.now().timestamp()
-            if lock != None:
-                lock.release()
-
-    def backup_files(self):
-        for path in self.list:
-            if os.path.isfile(path):
-                try:
-                    shutil.copyfile(path, path + "_backup")
-                except:
-                    print("Could not back up: " + path)
-
-
-
+        print("Finished!")
 
 class RankingPage():
     """Object to store url and associated workout variables"""
@@ -169,7 +104,7 @@ class RankingPage():
         return url_string.strip("&")
 
     def scrape(self, ranking_table_count, queue_added, num_ranking_tables):
-        r = get_url(threads.session, self.url_string)
+        r = get_url(self.threads.session, self.url_string)
         
         if r != None:
             tree = html.fromstring(r.text)
@@ -186,11 +121,11 @@ class RankingPage():
                 #master process sub-loop over each page
                 url_string = self.url_string + "&page=" + str(page)
 
-                print(get_str_ranking_table_progress(threads.job_queue.qsize(), queue_added, ranking_table_count, num_ranking_tables, page,pages) + "Getting ranking page: " + url_string)
+                print(get_str_ranking_table_progress(self.threads.job_queue.qsize(), queue_added, ranking_table_count, num_ranking_tables, page,pages) + "Getting ranking page: " + url_string)
                 if page > 1:
                     #don't get the first page again (if page is ommitted, page 1 is loaded)
                     workouts_page=[]
-                    r = get_url(s, url_string)
+                    r = get_url(self.threads.session, url_string)
                 #master process checks each row, adds URLs to queue for threads to visit
                 if r != None:
                     tree = html.fromstring(r.text)
@@ -201,8 +136,8 @@ class RankingPage():
                         columns = table_tree[0].xpath('thead/tr/th')
                         column_headings = [column.text for column in columns]
 
-                        for headings in column_headings:
-                            row_dict = {}
+                        # for headings in column_headings:
+                        # row_dict = {}
 
                         rows_tree = table_tree[0].xpath('tbody/tr')
                         num_rows = len(rows_tree)
@@ -223,25 +158,157 @@ class RankingPage():
                                     workout_ID = workout_info_link.split("/")[-2]
 
                                 #get workout data from row
-                                data.workouts[workout_ID] = get_workout_data(row_tree, column_headings, self, profile_ID)
+                                self.data.workouts[workout_ID] = get_workout_data(row_tree, column_headings, self, profile_ID)
                                 
-                                if config["get_profile_data"] and profile_ID != None:
+                                if self.config["get_profile_data"] and profile_ID != None:
                                     #add athlete profile object to thread queue
-                                    threads.job_queue.put(mw.Job(get_athlete, url_profile_base + profile_ID, [athletes, athletes_cache, profile_ID]))
+                                    self.threads.job_queue.put(mw.Job(get_athlete, self.config["url_profile_base"] + profile_ID, [self.data.athletes, self.cache.athletes, profile_ID]))
                                     queue_added += 1
 
-                                if config["get_extended_workout_data"]:
-                                    threads.job_queue.put(mw.Job(Cget_ext_workout, workout_info_link, [ext_workouts, ext_workouts_cache, workout_ID]))
+                                if self.config["get_extended_workout_data"]:
+                                    self.threads.job_queue.put(mw.Job(get_ext_workout, workout_info_link, [self.data.ext_workouts, self.cache.ext_workouts, workout_ID]))
                                     queue_added += 1
 
                 #after each page, check to see if we should write to file
-                if check_write_buffer(timestamp_last_write, write_buffer):
-                    threads.lock.acquire()
-                    write_data([workouts_file, athletes_file, extended_file],[workouts, athletes, ext_workouts])
-                    if config["use_cache"]:
-                        write_data([athletes_cache_file, extended_cache_file],[athletes_cache, ext_workouts_cache])
-                    timestamp_last_write = datetime.now().timestamp()
-                    threads.lock.release()
+                self.data.files.write(lock=self.threads.lock)
+                if self.cache != None:
+                    self.cache.files.write(lock=self.threads.lock)
+
+class Data():
+
+    def __init__(self, config):
+        self.athletes = {}
+        self.workouts = {}
+        self.ext_workouts = {}
+        self.list = [self.athletes, self.workouts, self.ext_workouts]
+        self.files = DataFiles(config)
+        self.files.set_data(self)
+
+
+class DataFiles():
+    
+    def __init__(self, config):
+        self.workouts = config["workouts_file"]
+        self.athletes = config["athletes_file"]
+        self.extended = config["extended_file"]
+        self.list = [self.workouts, self.athletes, self.extended]
+        self.timestamp_last_write = 0
+        self.write_buffer = config["write_buffer"] #write every X ranking pages
+        #backup previous output
+        self.backup_files()
+        self.init_files()
+
+    def set_data(self, data):
+        self.data = data
+
+    def write(self, lock=None, force=False):
+        if check_write_buffer(self.timestamp_last_write, self.write_buffer) or force:
+            if lock != None:
+                lock.acquire()
+
+            for out_file, data in zip(self.list, self.data.list):
+                try:
+                    fw = open(out_file, "w")
+                    output_data = json.dumps(data, ensure_ascii = False)
+                    fw.write(output_data)
+                    fw.close
+                    print("Write complete: " + out_file)
+                except:
+                    print("Write failed: " + out_file)
+                    fl = open("log","a+")
+                    fl.write("Write failed: " + out_file)
+
+            if lock != None:
+                lock.release()
+
+            self.timestamp_last_write = datetime.now().timestamp()
+
+    def backup_files(self):
+        for path in self.list:
+            if os.path.isfile(path):
+                try:
+                    shutil.copyfile(path, path + "_backup")
+                except:
+                    print("Could not back up: " + path)
+    
+    def init_files(self):
+        for path in self.list:
+            try:
+                fw = open(path, "w+")
+                fw.close
+            except:
+                print("Init failed: " + path)
+                fl = open("log","a+")
+                fl.write("Init failed: " + path)
+        self.timestamp_last_write = datetime.now().timestamp()
+
+class Cache():
+
+    def __init__(self, config):
+        self.files = CacheFiles(config)
+        try:
+            self.athletes = self.files.load(config["athletes_cache_file"])
+            self.ext_workouts = self.files.load(config["extended_cache_file"])
+        except FileNotFoundError:
+            print("Couldn't find cache files." )
+            self.athletes = {}
+            self.ext_workouts = {} 
+        
+        self.list = [self.athletes, self.ext_workouts]
+        self.files.set_cache(self)
+
+class CacheFiles():
+    
+    def __init__(self, config):
+        self.athletes = config["athletes_cache_file"]
+        self.extended = config["extended_cache_file"]
+        self.list = [self.athletes, self.extended]
+        self.timestamp_last_write = datetime.now().timestamp()
+        self.write_buffer = config["write_buffer"] #write every X ranking pages
+        #backup previous output
+        self.backup_files()
+
+    def set_cache(self, data):
+        self.cache = data
+
+    def load(self, path):
+        cache = {}
+        fo = open(path)
+        cache = json.load(fo)
+        fo.close
+        print(f"Loaded cache file: {path}")
+
+        return cache 
+
+    def write(self, lock=None, force=False):
+        if check_write_buffer(self.timestamp_last_write, self.write_buffer) or force:
+            if lock != None:
+                lock.acquire()
+
+            for out_file, data in zip(self.list, self.cache.list):
+                try:
+                    fw = open(out_file, "w")
+                    output_data = json.dumps(data, ensure_ascii = False)
+                    fw.write(output_data)
+                    fw.close
+                    print("Write complete: " + out_file)
+                except:
+                    print("Write failed: " + out_file)
+                    fl = open("log","a+")
+                    fl.write("Write failed: " + out_file)
+
+            self.timestamp_last_write = datetime.now().timestamp()
+            if lock != None:
+                lock.release()
+
+    def backup_files(self):
+        for path in self.list:
+            if os.path.isfile(path):
+                try:
+                    shutil.copyfile(path, path + "_backup")
+                except:
+                    print("Could not back up: " + path)
+
 
 
 def get_url(session, url, exception_on_error = False):
@@ -260,14 +327,14 @@ def get_url(session, url, exception_on_error = False):
         else:
             raise ValueError("Could not access url: " + url)
 
-def construct_url(url_parts, machine_parameters={}):
-    #construct url string
-    url = "/".join(url_parts) + "?"
-    #construct url with query string
-    for key,val in machine_parameters["query"].items():
-        if (val != None and val != "") and (key != None and key != ""):
-            url = url + key + "=" + val + "&"
-    return url.strip("&")
+# def construct_url(url_parts, machine_parameters={}):
+#     #construct url string
+#     url = "/".join(url_parts) + "?"
+#     #construct url with query string
+#     for key,val in machine_parameters["query"].items():
+#         if (val != None and val != "") and (key != None and key != ""):
+#             url = url + key + "=" + val + "&"
+#     return url.strip("&")
     
 
 def lists2dict(listkey,listval):
@@ -379,9 +446,7 @@ def get_ext_workout_data(r):
 
 
 def get_str_ranking_table_progress(queue_size, queue_added, ranking_url_count, num_ranking_urls, page,pages):
-    return f"Queue size: {str(queue_size)}/{str(queue_added)} | Ranking Table: {str(ranking_url_count)}/{str(num_ranking_urls)} | Page: {str(page)}/{str(pages)} |"
-
-
+    return f"Queue size: {str(queue_size)}/{str(queue_added)} | Ranking Table: {str(ranking_url_count)}/{str(num_ranking_urls)} | Page: {str(page)}/{str(pages)} | "
 
 def check_write_buffer(timestamp_last_write, write_buffer):
     return datetime.now().timestamp() > timestamp_last_write + write_buffer
@@ -418,7 +483,7 @@ def get_athlete(job):
             job_data = cache[profile_id]#retrieve from cache
         else:
             get_url_success = job.get_url() #get the URL
-            if get_url_success:
+            if True: #get_url_success: TODO bug in mutliwebbing code, it's fixed but needs updated to pypi 
                 if job.request.status_code == 200: #check that the URL was recieved OK
                     job_data = get_athlete_data(job.request)
                     job_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
@@ -428,9 +493,10 @@ def get_athlete(job):
                 else:
                     print(f"There was a problem with {job.url}, status code: {job.request.status_code}")
 
-        job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
-        athletes.update({profile_id:job_data}) #main data
-        job.lock.release()
+        if job_data != {}:
+            job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
+            athletes.update({profile_id:job_data}) #main data
+            job.lock.release()
 
 def get_ext_workout(job):
     #function executed by thread, updates cache and data dictionary
@@ -447,7 +513,7 @@ def get_ext_workout(job):
             job_data = cache[workout_id]#retrieve from cache
         else:
             get_url_success = job.get_url() #get the URL
-            if get_url_success:
+            if True: #get_url_success: TODO bug in mutliwebbing code, it's fixed but needs updated to pypi 
                 if job.request.status_code == 200: #check that the URL was recieved OK
                         job_data = get_ext_workout_data(job.request)
                         job_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
@@ -457,9 +523,10 @@ def get_ext_workout(job):
                 else:
                     print(f"There was a problem with {job.url}, status code: {job.request.status_code}")
 
-        job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
-        ext_workouts.update({workout_id:job_data}) #main data
-        job.lock.release()
+        if job_data != {}:
+            job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
+            ext_workouts.update({workout_id:job_data}) #main data
+            job.lock.release()
 
 def load_config(path):
     try:
@@ -470,4 +537,6 @@ def load_config(path):
         print("Could not open config file. Quitting")
         quit()
 
-    
+if __name__ == "__main__":
+    scraper = Scraper("C2config.json")
+    scraper.scrape()    

@@ -1,5 +1,5 @@
 {
-    "max_ranking_tables":"",
+    "max_ranking_tables":1,
     "use_cache":true,
     "threads":10,
     "workouts_file":"output/C2Workouts.json",
@@ -12,7 +12,7 @@
     "C2_login":true,
     "C2_username":"jopow88876",
     "C2_password":"l7P8ugWFGVTFQuFCCp9zjd48wI4p85",
-    "write_buffer":60,
+    "write_buffer":30,
     "get_extended_workout_data":true,
     "get_profile_data":true,
     "machine_parameters":{
