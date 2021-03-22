@@ -13,13 +13,13 @@ import time #sleep
 class Scraper():
 
     def __init__(self, config_path):
-        self.config = load_config(config_path)
+        self.config = self.load_config(config_path)
         #initialise data structures and output files
         self.data = Data(self.config)
         if self.config["use_cache"] == True:
             self.cache = Cache(self.config)
         else:
-            cache=None
+            self.cache=None
 
         # initialize threads
         self.threads = mw.MultiWebbing(self.config["threads"])
@@ -43,6 +43,15 @@ class Scraper():
 
         self.ranking_page_count = 0 #counts the number of ranking table objects processed
         self.queue_added = 0 #counts the total number of objects added to the queue
+
+    def load_config(self,path):
+        try:
+            fo = open("C2config.json")
+            return json.load(fo)
+            fo.close
+        except:
+            print("Could not open config file. Quitting")
+            quit()
 
     def scrape(self):
 
@@ -327,16 +336,6 @@ def get_url(session, url, exception_on_error = False):
         else:
             raise ValueError("Could not access url: " + url)
 
-# def construct_url(url_parts, machine_parameters={}):
-#     #construct url string
-#     url = "/".join(url_parts) + "?"
-#     #construct url with query string
-#     for key,val in machine_parameters["query"].items():
-#         if (val != None and val != "") and (key != None and key != ""):
-#             url = url + key + "=" + val + "&"
-#     return url.strip("&")
-    
-
 def lists2dict(listkey,listval):
     #takes two lists, used the first as keys and the second as values, returns a dictionary
     returndict={}
@@ -483,7 +482,7 @@ def get_athlete(job):
             job_data = cache[profile_id]#retrieve from cache
         else:
             get_url_success = job.get_url() #get the URL
-            if True: #get_url_success: TODO bug in mutliwebbing code, it's fixed but needs updated to pypi 
+            if get_url_success:
                 if job.request.status_code == 200: #check that the URL was recieved OK
                     job_data = get_athlete_data(job.request)
                     job_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
@@ -513,7 +512,7 @@ def get_ext_workout(job):
             job_data = cache[workout_id]#retrieve from cache
         else:
             get_url_success = job.get_url() #get the URL
-            if True: #get_url_success: TODO bug in mutliwebbing code, it's fixed but needs updated to pypi 
+            if get_url_success: 
                 if job.request.status_code == 200: #check that the URL was recieved OK
                         job_data = get_ext_workout_data(job.request)
                         job_data["retrieved"] = strftime("%d-%m-%Y %H:%M:%S", gmtime())
@@ -527,15 +526,6 @@ def get_ext_workout(job):
             job.lock.acquire() #dict.update is thread safe but other fucntions used elsewhere (e.g. json.dumps) may not, need lock here
             ext_workouts.update({workout_id:job_data}) #main data
             job.lock.release()
-
-def load_config(path):
-    try:
-        fo = open("C2config.json")
-        return json.load(fo)
-        fo.close
-    except:
-        print("Could not open config file. Quitting")
-        quit()
 
 if __name__ == "__main__":
     scraper = Scraper("C2config.json")
