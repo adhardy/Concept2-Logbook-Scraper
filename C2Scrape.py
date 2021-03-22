@@ -77,14 +77,14 @@ class DataFiles():
 class Cache():
 
     def __init__(self, config):
-        #try:
-        self.files = CacheFiles(config)
-        self.athletes = self.files.load(config["athletes_cache_file"])
-        self.ext_workouts = self.files.load(config["extended_cache_file"])
-        # except :
-        #     print("Couldn't load cache files:" )
-        #     self.athletes = {}
-        #     self.ext_workouts = {} 
+        try:
+            self.files = CacheFiles(config)
+            self.athletes = self.files.load(config["athletes_cache_file"])
+            self.ext_workouts = self.files.load(config["extended_cache_file"])
+        except :
+            print("Couldn't load cache files:" )
+            self.athletes = {}
+            self.ext_workouts = {} 
         
 class CacheFiles():
     
@@ -139,10 +139,13 @@ class CacheFiles():
                 except:
                     print("Could not back up: " + path)
 
+
+
+
 class RankingPage():
     """Object to store url and associated workout variables"""
 
-    def __init__(self, base_url, year, machine, event, query_parameters={}):
+    def __init__(self, base_url, year, machine, event, config, threads, data, cache=None, query_parameters={}):
         #query should be a dictionary of url query keys and values
         self.machine = machine
         self.base_url = base_url
@@ -151,7 +154,11 @@ class RankingPage():
         self.query_parameters = query_parameters
         self.url_parts = (base_url, year, machine, event)
         self.url_string = self.get_url_string()
-    
+        self.config = config
+        self.threads = threads
+        self.data = data
+        self.cache = cache
+
     def get_url_string(self):
         #construct url string
         url_string = "/".join(map(str,self.url_parts)) + "?"
@@ -161,7 +168,7 @@ class RankingPage():
                 url_string = url_string + key + "=" + val + "&"
         return url_string.strip("&")
 
-    def scrape(self, ranking_table_count, threads, queue_added, num_ranking_tables, data, cache=None):
+    def scrape(self, ranking_table_count, queue_added, num_ranking_tables):
         r = get_url(threads.session, self.url_string)
         
         if r != None:
@@ -179,7 +186,7 @@ class RankingPage():
                 #master process sub-loop over each page
                 url_string = self.url_string + "&page=" + str(page)
 
-                print(get_str_ranking_table_progress(threads.job_queue.qsize(), queue_added, self, num_ranking_tables, page,pages) + "Getting ranking page: " + url_string)
+                print(get_str_ranking_table_progress(threads.job_queue.qsize(), queue_added, ranking_table_count, num_ranking_tables, page,pages) + "Getting ranking page: " + url_string)
                 if page > 1:
                     #don't get the first page again (if page is ommitted, page 1 is loaded)
                     workouts_page=[]
@@ -218,12 +225,12 @@ class RankingPage():
                                 #get workout data from row
                                 data.workouts[workout_ID] = get_workout_data(row_tree, column_headings, self, profile_ID)
                                 
-                                if get_profile_data and profile_ID != None:
+                                if config["get_profile_data"] and profile_ID != None:
                                     #add athlete profile object to thread queue
                                     threads.job_queue.put(mw.Job(get_athlete, url_profile_base + profile_ID, [athletes, athletes_cache, profile_ID]))
                                     queue_added += 1
 
-                                if get_extended_workout_data:
+                                if config["get_extended_workout_data"]:
                                     threads.job_queue.put(mw.Job(Cget_ext_workout, workout_info_link, [ext_workouts, ext_workouts_cache, workout_ID]))
                                     queue_added += 1
 
@@ -270,10 +277,14 @@ def lists2dict(listkey,listval):
         returndict[key] = val
     return returndict
 
-def generate_C2Ranking_urls(machine_parameters, url_years, url_base):
-#this supports 4 query parameters for each machine type, the keys can be different, but exactly 4 must be present in the data structure below, the lists though can be blank
-#can be increased by adding more nested for loops when constructing the query string
-#TODO: to make this fully dynamic I think I need to use a recursive algorithm
+def generate_ranking_pages(config, threads, data, cache):
+
+    machine_parameters = config["machine_parameters"]
+    url_years = config["url_parameters"]["url_years"]
+    url_base = config["url_parameters"]["url_base"]
+    #this supports 4 query parameters for each machine type, the keys can be different, but exactly 4 must be present in the data structure below, the lists though can be blank
+    #can be increased by adding more nested for loops when constructing the query string
+    #TODO: to make this fully dynamic I think I need to use a recursive algorithm
 
     #generate URLS for scraping
     urls = []
@@ -295,7 +306,7 @@ def generate_C2Ranking_urls(machine_parameters, url_years, url_base):
                         for val2 in machine_parameters[machine_type_key]["query"][param_keys[2]]:
                             for val3 in machine_parameters[machine_type_key]["query"][param_keys[3]]:
                                 query_parameters = lists2dict(param_keys,(val0,val1,val2,val3))
-                                urls.append(RankingPage(url_base, url_year, machine_type_key, url_event, query_parameters))
+                                urls.append(RankingPage(url_base, url_year, machine_type_key, url_event, config, threads, data, cache, query_parameters))
     return urls
 
 def get_athlete_data(r):
