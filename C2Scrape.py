@@ -11,6 +11,7 @@ import time #sleep
 #TODO: os.path.join(),aws rds
 
 class Scraper():
+    """Instance this to set up the scraper"""
 
     def __init__(self, config_path):
         self.config = self.load_config(config_path)
@@ -45,6 +46,7 @@ class Scraper():
         self.queue_added = 0 #counts the total number of objects added to the queue
 
     def load_config(self,path):
+        """load configuration from a JSON file"""
         try:
             fo = open("C2config.json")
             return json.load(fo)
@@ -54,12 +56,11 @@ class Scraper():
             quit()
 
     def scrape(self):
-
+        """Call to start the scraper"""
         #main loop for master process over each ranking table
         for ranking_page in self.ranking_pages[0:self.num_ranking_pages]: 
             self.ranking_page_count += 1
             self.queue_added = ranking_page.scrape(self.ranking_page_count, self.queue_added, self.num_ranking_pages)
-
 
         print("Finished scraping ranking tables, waiting for profile threads to finish...")
 
@@ -88,7 +89,7 @@ class Scraper():
         print("Finished!")
 
 class RankingPage():
-    """Object to store url and associated workout variables"""
+    """Scrapes the raning pages of the logbook"""
 
     def __init__(self, base_url, year, machine, event, config, threads, data, cache=None, query_parameters={}):
         #query should be a dictionary of url query keys and values
@@ -460,13 +461,11 @@ def C2_login(session, url_login, username, password, url_login_success):
     form['username'] = username
     form['password'] = password
     response = session.post(url_login, data=form)
-    if response.url != url_login_success:
+    if response.url != url_login_success: #see that we get to the expected page
         sys.exit("Unable to login to the logbook, quitting.")
     else:
         print("Login")
     return session
-    
-    return response
 
 def get_athlete(job):
     #TODO these job functions will fail fairly silently (error prints will get swallowed up by other console output) if a none 200 response code or on connection error
