@@ -43,7 +43,7 @@ threads.start()
 ranking_tables = C2Scrape.generate_C2Ranking_urls(config["machine_parameters"], config["url_parameters"]["url_years"], config["url_parameters"]["url_base"])
 num_ranking_tables = len(ranking_tables)
 
-#check for override of maximum urls
+#check for override of maximum ranking tables
 if config["max_ranking_tables"] != "":
     num_ranking_tables = int(config["max_ranking_tables"])
 

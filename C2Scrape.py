@@ -97,9 +97,18 @@ class CacheFiles():
         #backup previous output
         self.backup_files()
 
-    def load(self):
-        for path in self.list:
-           fo =  
+    def load(self, path):
+        cache = {}
+        try:
+            fo = open(path)
+            cache = json.load(fo)
+            fo.close
+            print(f"Loaded cache file: {path}")
+        except:
+            print(f"Couldn't load the cache file: {path}")
+            cache = {}
+        finally:
+            return cache 
 
     def write(self, cache, lock=None):
         if check_write_buffer(timestamp_last_write, write_buffer) and config["use_cache"]:
