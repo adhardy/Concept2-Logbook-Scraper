@@ -340,7 +340,7 @@ def get_url(session, url, exception_on_error = False):
             raise ValueError("Could not access url: " + url)
 
 def lists2dict(listkey,listval):
-    #takes two lists, used the first as keys and the second as values, returns a dictionary
+    """takes two lists, used the first as keys and the second as values, returns a dictionary"""
     returndict={}
     for key, val in zip(listkey, listval):
         returndict[key] = val
@@ -445,8 +445,6 @@ def get_ext_workout_data(r):
 
     return profile
     
-
-
 def get_str_ranking_table_progress(queue_size, queue_added, ranking_url_count, num_ranking_urls, page,pages):
     return f"Queue size: {str(queue_size)}/{str(queue_added)} | Ranking Table: {str(ranking_url_count)}/{str(num_ranking_urls)} | Page: {str(page)}/{str(pages)}"
 

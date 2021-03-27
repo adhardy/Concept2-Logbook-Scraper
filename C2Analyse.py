@@ -32,7 +32,7 @@ class df():
         try:
             fa = open(path, "r")
             df = pd.DataFrame.from_dict(json.load(fa)).T
-            df.index.set_names(index_name, inplace=True)
+            #df.index.set_names(index_name, inplace=True)
             df.replace({"":np.nan, "None":np.nan, None:np.nan}, inplace=True) #all missing values to nan
         except FileNotFoundError:
             print(f"Could not load JSON file: {path}")

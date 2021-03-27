@@ -1,7 +1,7 @@
 {
     "max_ranking_tables":"",
     "use_cache":true,
-    "threads":10,
+    "threads":12,
     "workouts_file":"output/C2Workouts.json",
     "athletes_file":"output/C2Athletes.json",
     "extended_file":"output/C2Extended.json",
@@ -46,6 +46,6 @@
     },
     "url_parameters":{
         "url_base" : "https://log.concept2.com/rankings",
-        "url_years" :[2021, 2020, 2019]
+        "url_years" :[2018, 2017]
     }
 }
