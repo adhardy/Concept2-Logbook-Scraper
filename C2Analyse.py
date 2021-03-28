@@ -20,9 +20,9 @@ class df():
         self.set_list()
 
     def load_csvs(self, path_folder):
-        self.athletes = pd.read_csv("analysis/athletes.csv",sep=",")
-        self.extended = pd.read_csv("analysis/extended.csv",sep=",")
-        self.workouts = pd.read_csv("analysis/workouts.csv",sep=",")
+        self.athletes = pd.read_csv("analysis/athletes.csv",sep=",", index_col=0)
+        self.extended = pd.read_csv("analysis/extended.csv",sep=",", index_col=0)
+        self.workouts = pd.read_csv("analysis/workouts.csv",sep=",", index_col=0)
         self.set_list()
 
     def set_list(self):
@@ -117,7 +117,7 @@ def convert_heights(df_heights):
         df_heights = df_heights.replace({' ft ':' ', ' in':' '}, regex=True)
         df_heights = df_heights.str.split(expand=True)
         df_heights = df_heights.astype(datatypes)
-        df_heights["height"] = round(df_heights[0] *  ft_to_cm + df_heights[1] * in_to_cm,0)
+        df_heights["height"] = round(df_heights[0] *  ft_to_cm + df_heights[1] * in_to_cm,1)
        
     except AttributeError:
         print("Looks like height is already converted, skipping")
@@ -145,7 +145,7 @@ def convert_weights(df_weight):
         df_weights = df_weight.replace({' lb':''}, regex=True)
         print(df_weights)
         df_weights = df_weights.astype(float)
-        df_weights = round(df_weights * lbs_kg,0)
+        df_weights = round(df_weights * lbs_kg,1)
     except AttributeError:
         print("Something went wrong")
 
