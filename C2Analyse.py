@@ -107,8 +107,8 @@ def convert_to_datetime(date_str):
             else:
                 return date_value
         if date_value == None:
-            raise ValueError(f"No mathing datetime format found for '{date_str}'")
-
+            #raise ValueError(f"No mathing datetime format found for '{date_str}'")
+                return 
 def convert_heights(df_heights):
     ft_to_cm = 30.48
     in_to_cm = 2.54
@@ -158,6 +158,16 @@ def duration_string_to_duration_seconds(duration_string):
         return duration_string
     if isinstance(duration_string, str):
         min_sec = 60
+        hour_sec = 3600
         duration_list = duration_string.split(":")
-        duration_seconds = int(duration_list[0]) * min_sec + float(duration_list[1])
+        # convert minutes and secnds, always have both
+        duration_seconds = int(duration_list[-2]) * min_sec + float(duration_list[-1])
+        #convert hours if they are present
+        if len(duration_list) == 3:
+            duration_seconds += int(duration_list[-3]) * hour_sec
         return duration_seconds
+
+
+# -1 = seconds
+# -2 = minutes
+# -3 = hours
